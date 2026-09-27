@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mox · 让掌心装下整个 Linux</title>
+<meta name="description" content="Mox 系列官方站 —— moxsh：Android 液态玻璃终端，兼容 Termux 生态。产品下载、联系方式与赞助入口。">
+<meta name="color-scheme" content="dark">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root { --bg0:#0b0e1a; --bg1:#131731; --glass:rgba(255,255,255,.07); --glass-strong:rgba(255,255,255,.13);
+    --stroke:rgba(255,255,255,.14); --text:rgba(255,255,255,.92); --dim:rgba(255,255,255,.55);
+    --a1:#37d5d3; --a2:#8a7bff; --a3:#ff7ac3; --radius:22px; }
+  html { scroll-behavior:smooth; }
+  body { background:
+      radial-gradient(60rem 40rem at 12% -10%, rgba(55,213,211,.16), transparent 60%),
+      radial-gradient(50rem 36rem at 108% 18%, rgba(138,123,255,.18), transparent 60%),
+      radial-gradient(46rem 34rem at 50% 118%, rgba(255,122,195,.10), transparent 60%),
+      linear-gradient(180deg,var(--bg0),var(--bg1));
+    color:var(--text); min-height:100vh; overflow-x:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans SC","Microsoft YaHei",sans-serif; }
+  ::selection { background:rgba(138,123,255,.4); }
+  .glass { background:var(--glass); border:1px solid var(--stroke); border-radius:var(--radius);
+    backdrop-filter:blur(18px) saturate(1.4); -webkit-backdrop-filter:blur(18px) saturate(1.4);
+    box-shadow:0 12px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14); }
+  .wrap { width:min(1080px,92vw); margin:0 auto; }
+  nav { position:sticky; top:12px; z-index:50; width:min(1080px,92vw); margin:12px auto 0;
+        display:flex; align-items:center; gap:18px; padding:12px 20px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px; }
+  .brand .dot { width:26px; height:26px; border-radius:9px; flex:none;
+    background:conic-gradient(from 210deg,var(--a1),var(--a2),var(--a3),var(--a1));
+    box-shadow:0 0 18px rgba(138,123,255,.55); }
+  nav .links { margin-left:auto; display:flex; gap:4px; flex-wrap:wrap; }
+  nav a { color:var(--dim); text-decoration:none; font-size:14px; padding:7px 13px; border-radius:12px; transition:.2s; }
+  nav a:hover { color:var(--text); background:var(--glass-strong); }
+  header { text-align:center; padding:clamp(64px,12vh,130px) 0 44px; }
+  .kicker { display:inline-block; font-size:13px; color:var(--dim); border:1px solid var(--stroke);
+            border-radius:999px; padding:6px 16px; background:var(--glass); letter-spacing:2px; }
+  h1 { margin:26px 0 18px; font-size:clamp(38px,8vw,72px); line-height:1.14; letter-spacing:1px; font-weight:800; }
+  h1 .grad { background:linear-gradient(100deg,var(--a1),var(--a2) 55%,var(--a3));
+             -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .sub { color:var(--dim); font-size:clamp(15px,2.4vw,18px); max-width:640px; margin:0 auto; line-height:1.9; }
+  .hero-cta { margin-top:34px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .btn { display:inline-flex; align-items:center; gap:8px; cursor:pointer; padding:13px 26px;
+         border-radius:16px; font-size:15px; font-weight:600; border:1px solid var(--stroke);
+         color:var(--text); text-decoration:none; background:var(--glass);
+         backdrop-filter:blur(12px); transition:.22s; }
+  .btn:hover { transform:translateY(-2px); background:var(--glass-strong); }
+  .btn.primary { background:linear-gradient(100deg,rgba(55,213,211,.24),rgba(138,123,255,.30));
+                 border-color:rgba(138,123,255,.45); box-shadow:0 8px 28px rgba(138,123,255,.25); }
+  section { padding:46px 0; }
+  .sec-title { font-size:clamp(22px,4vw,30px); font-weight:750; margin-bottom:8px; }
+  .sec-desc { color:var(--dim); font-size:15px; margin-bottom:30px; line-height:1.8; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; }
+  .card { padding:28px; position:relative; overflow:hidden; transition:.25s; }
+  .card:hover { transform:translateY(-4px); box-shadow:0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.18); }
+  .card::before { content:""; position:absolute; inset:-60% 55% 60% -20%;
+    background:linear-gradient(120deg,rgba(255,255,255,.14),transparent); transform:rotate(18deg); pointer-events:none; }
+  .card .tag { display:inline-block; font-size:12px; padding:4px 12px; border-radius:999px;
+    border:1px solid rgba(55,213,211,.5); color:var(--a1); letter-spacing:1px; margin-bottom:14px; }
+  .card .tag.wip { border-color:rgba(138,123,255,.5); color:var(--a2); }
+  .card h3 { font-size:21px; margin-bottom:10px; }
+  .card p { color:var(--dim); font-size:14px; line-height:1.85; }
+  .card .feat { list-style:none; margin:16px 0 20px; }
+  .card .feat li { color:var(--dim); font-size:13.5px; line-height:2.05; }
+  .card .feat li::before { content:"◆ "; color:var(--a1); font-size:10px; vertical-align:2px; }
+  .card .actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .card .btn { padding:10px 18px; font-size:14px; }
+  .soon { border-style:dashed; opacity:.85; display:flex; flex-direction:column;
+          align-items:center; justify-content:center; text-align:center; min-height:240px; color:var(--dim); }
+  .soon .plus { font-size:40px; margin-bottom:12px; opacity:.5; }
+  .contact-box { padding:34px; text-align:center; }
+  .contact-box .tip { color:var(--dim); font-size:14px; margin:10px 0 22px; line-height:1.8; }
+  #captchaCanvas { border-radius:14px; border:1px solid var(--stroke); display:block; margin:0 auto 14px; }
+  #answer { width:100%; padding:13px 16px; border-radius:14px; border:1px solid var(--stroke);
+    background:rgba(0,0,0,.25); color:var(--text); font-size:16px; outline:none; text-align:center; letter-spacing:4px; }
+  #answer:focus { border-color:var(--a2); }
+  .vbtn { margin-top:14px; width:100%; }
+  .vmsg { font-size:13px; margin-top:10px; min-height:18px; }
+  .vmsg.err { color:#ff8f8f; }
+  .vmsg.ok { color:#7be6b3; }
+  #contactCards { display:none; gap:16px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+  .citem { padding:20px 26px; text-align:left; min-width:250px; }
+  .citem .label { font-size:12.5px; color:var(--dim); letter-spacing:1px; margin-bottom:8px; }
+  .citem .val { font-size:19px; font-weight:700; letter-spacing:1px; word-break:break-all; }
+  .citem .copy { margin-top:12px; font-size:13px; padding:7px 16px; }
+  footer { padding:60px 0 40px; text-align:center; color:var(--dim); font-size:13px; line-height:2.1; }
+  footer a { color:var(--dim); }
+  .modal { position:fixed; inset:0; z-index:99; display:none; align-items:center; justify-content:center;
+           background:rgba(5,7,15,.72); backdrop-filter:blur(8px); padding:20px; }
+  .modal.open { display:flex; }
+  .modal .mbox { width:min(420px,94vw); padding:30px; }
+  .modal h3 { margin-bottom:6px; }
+  .modal .mdesc { color:var(--dim); font-size:13.5px; margin-bottom:18px; line-height:1.7; }
+  .modal .close { position:absolute; top:14px; right:18px; cursor:pointer; color:var(--dim); font-size:22px; }
+  .fadeup { opacity:0; transform:translateY(24px); transition:opacity .7s, transform .7s; }
+  .fadeup.in { opacity:1; transform:none; }
+  .toast { position:fixed; left:50%; bottom:36px; transform:translateX(-50%) translateY(20px);
+    background:var(--glass-strong); border:1px solid var(--stroke); border-radius:14px;
+    padding:12px 22px; font-size:14px; opacity:0; pointer-events:none; transition:.3s; z-index:120;
+    backdrop-filter:blur(14px); }
+  .toast.show { opacity:1; transform:translateX(-50%); }
+</style>
+</head>
+<body>
+<nav class="glass">
+  <div class="brand"><span class="dot"></span><span>Mox</span></div>
+  <div class="links">
+    <a href="#products">产品</a>
+    <a href="#download">下载</a>
+    <a href="#contact">联系我们</a>
+    <a href="#sponsor">赞助</a>
+  </div>
+</nav>
+
+<header>
+  <div class="kicker">MOX SERIES · 官方站</div>
+  <h1>让掌心装下<br><span class="grad">整个 Linux</span></h1>
+  <p class="sub">Mox 是一个正在生长的工具系列。第一款产品 moxsh ——
+     跑在 Android 上的液态玻璃终端：性能扎实的 Rust 内核，和一整套美得像水的界面。</p>
+  <div class="hero-cta">
+    <a class="btn primary" href="#download">获取 moxsh</a>
+    <a class="btn" href="#contact">联系我们</a>
+  </div>
+</header>
+
+<section id="products" class="wrap">
+  <div class="sec-title fadeup">产品系列</div>
+  <p class="sec-desc fadeup">从终端开始，逐步长成一整个生态。每一个 Mox 产品，都遵循同一套审美与工程标准。</p>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <span class="tag">MOXSH · 终端</span>
+      <h3>moxsh</h3>
+      <p>Android 液态玻璃终端。整颗应用从内核到 UI 都为「快」与「美」重新造过一遍轮子。</p>
+      <ul class="feat">
+        <li>Rust 自研内核：NEON 加速、增量渲染、脏区跟踪</li>
+        <li>全面兼容 Termux 包生态，*.deb 直接可装</li>
+        <li>proot 发行版管理：Ubuntu / Debian / Kali 一键开箱</li>
+        <li>插件体系：AI 技能、悬浮玻璃终端、桌面小部件</li>
+        <li>加固本地 IPC：挑战-响应 + HMAC-SHA256 鉴权</li>
+      </ul>
+      <div class="actions">
+        <a class="btn primary" href="#download">下载</a>
+      </div>
+    </div>
+    <div class="card glass soon fadeup">
+      <div class="plus">+</div>
+      <h3>更多系列</h3>
+      <p>在终端站稳之后，Mox 会继续往工具链深处走。<br>新的产品，敬请期待。</p>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="wrap">
+  <div class="sec-title fadeup">下载 moxsh</div>
+  <p class="sec-desc fadeup">安装包持续随代码构建发布。两种获取方式任选。</p>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <span class="tag wip">直连下载</span>
+      <h3>Release 安装包</h3>
+      <p>最新自动构建的正式签名 APK。如果你的网络可以访问 GitHub，这是最快的方式。</p>
+      <div class="actions" style="margin-top:18px">
+        <a class="btn primary" id="dlLatest" href="#" target="_blank" rel="noopener">前往下载页 →</a>
+      </div>
+    </div>
+    <div class="card glass fadeup">
+      <span class="tag wip">人工通道</span>
+      <h3>联系获取</h3>
+      <p>网络不便或想要尝鲜构建？通过下方联系方式加 QQ，直接把安装包发给你。</p>
+      <div class="actions" style="margin-top:18px">
+        <a class="btn" href="#contact">查看联系方式 ↓</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="wrap">
+  <div class="sec-title fadeup">联系我们</div>
+  <p class="sec-desc fadeup">产品反馈、共建合作、获取安装包，都可以直接找到我们。
+     为了不让机器人把联系方式爬走，需要先完成一个 3 秒的小验证。</p>
+  <div class="glass contact-box fadeup">
+    <div id="verifyEntry">
+      <p class="tip">点下方按钮，完成人机验证后即可查看联系方式。</p>
+      <button class="btn primary" onclick="openVerify()">验证并查看联系方式</button>
+    </div>
+    <div id="contactCards">
+      <div class="citem glass">
+        <div class="label">QQ</div>
+        <div class="val" id="qqVal"></div>
+        <button class="btn copy" onclick="copyVal('qqVal')">复制</button>
+      </div>
+      <div class="citem glass">
+        <div class="label">邮箱</div>
+        <div class="val" id="mailVal"></div>
+        <button class="btn copy" onclick="copyVal('mailVal')">复制</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="sponsor" class="wrap">
+  <div class="sec-title fadeup">赞助支持</div>
+  <p class="sec-desc fadeup">Mox 系列全程免费开放。如果它帮到了你，赞助是对独立开发最直接的支持。</p>
+  <div class="card glass fadeup" style="text-align:center; padding:40px">
+    <h3 style="margin-bottom:10px">赞助通道整理中</h3>
+    <p>收款码与赞助者鸣谢名单即将上线。想提前支持，也可以通过上方联系方式直接联系我们。</p>
+  </div>
+</section>
+
+<footer>
+  <div>© 2026 Mox 系列 · 由独立开发者与 AI 协作构建</div>
+  <div>moxsh 开源仓库与全部构建产物，均可在 GitHub 获取</div>
+</footer>
+
+<div class="modal" id="verifyModal">
+  <div class="glass mbox" style="position:relative">
+    <span class="close" onclick="closeVerify()">×</span>
+    <h3>人机验证</h3>
+    <p class="mdesc" id="mDesc">请输入下面算式的答案（最多尝试 5 次，每次刷新题目）。</p>
+    <canvas id="captchaCanvas" width="260" height="90"></canvas>
+    <input id="answer" inputmode="numeric" maxlength="6" placeholder="答案">
+    <button class="btn primary vbtn" onclick="submitVerify()">确认</button>
+    <div class="vmsg" id="vmsg"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== 联系方式（混淆存储：验证通过才还原；明文不出现在页面源码中） ===== */
+var _K = 0x5d;
+var _QA = [110,109,105,111,100,101,109,109,110,106];
+var _MA = [39,107,107,107,107,107,107,107,107,107,107,29,108,107,110,115,62,50,48];
+function _d(a){ var s=''; for(var i=0;i<a.length;i++){ s+=String.fromCharCode(a[i]^_K); } return s; }
+
+/* ===== 人机验证 ===== */
+var capAns = null, fails = 0, lockedUntil = 0;
+function openVerify(){
+  if (Date.now() < lockedUntil) {
+    showToast('尝试次数过多，请 ' + Math.ceil((lockedUntil-Date.now())/1000) + ' 秒后再试');
+    return;
+  }
+  document.getElementById('verifyModal').classList.add('open');
+  drawCaptcha();
+  setTimeout(function(){ document.getElementById('answer').focus(); }, 60);
+}
+function closeVerify(){ document.getElementById('verifyModal').classList.remove('open'); }
+function drawCaptcha(){
+  var a = 2 + Math.floor(Math.random()*8);
+  var b = 2 + Math.floor(Math.random()*9);
+  var mul = Math.random() < 0.5;
+  capAns = mul ? a*b : a+b;
+  var c = document.getElementById('captchaCanvas');
+  var x = c.getContext('2d');
+  x.clearRect(0,0,c.width,c.height);
+  var g = x.createLinearGradient(0,0,260,90);
+  g.addColorStop(0,'#1b2140'); g.addColorStop(1,'#2a2350');
+  x.fillStyle = g; x.fillRect(0,0,260,90);
+  for (var i=0;i<5;i++){
+    x.strokeStyle = 'rgba(255,255,255,'+(0.06+Math.random()*0.10)+')';
+    x.beginPath();
+    x.moveTo(Math.random()*260, Math.random()*90);
+    x.bezierCurveTo(Math.random()*260,Math.random()*90,Math.random()*260,Math.random()*90,Math.random()*260,Math.random()*90);
+    x.stroke();
+  }
+  var expr = mul ? (a+' × '+b+' = ?') : (a+' + '+b+' = ?');
+  var cx = 130, y = 52;
+  x.font = 'bold 34px "PingFang SC", sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  for (var j=0;j<expr.length;j++){
+    var ch = expr[j];
+    x.save();
+    x.translate(cx - (expr.length*11) + j*22 + (Math.random()*4-2), y + (Math.random()*8-4));
+    x.rotate((Math.random()*30-15)*Math.PI/180);
+    x.fillStyle = 'rgba(255,255,255,'+(0.82+Math.random()*0.18)+')';
+    x.fillText(ch, 0, 0);
+    x.restore();
+  }
+  for (var k=0;k<16;k++){
+    x.fillStyle = 'rgba(255,255,255,'+(0.10+Math.random()*0.16)+')';
+    x.beginPath();
+    x.arc(Math.random()*260, Math.random()*90, Math.random()*2+0.6, 0, Math.PI*2);
+    x.fill();
+  }
+}
+function submitVerify(){
+  var msg = document.getElementById('vmsg');
+  if (Date.now() < lockedUntil) return;
+  var v = (document.getElementById('answer').value||'').trim();
+  if (v === '' || capAns === null) return;
+  if (parseInt(v,10) === capAns){
+    msg.className = 'vmsg ok'; msg.textContent = '验证通过，已为你解锁联系方式。';
+    fails = 0;
+    setTimeout(function(){
+      closeVerify();
+      unlockContact();
+    }, 550);
+  } else {
+    fails++;
+    if (fails >= 5){
+      lockedUntil = Date.now() + 30000;
+      closeVerify();
+      showToast('尝试次数过多，已锁定 30 秒');
+      fails = 0;
+    } else {
+      msg.className = 'vmsg err';
+      msg.textContent = '不对，再试试（剩余 ' + (5-fails) + ' 次）';
+      document.getElementById('answer').value = '';
+      drawCaptcha();
+    }
+  }
+}
+document.getElementById('answer').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') submitVerify();
+});
+function unlockContact(){
+  document.getElementById('verifyEntry').style.display = 'none';
+  var box = document.getElementById('contactCards');
+  box.style.display = 'flex';
+  document.getElementById('qqVal').textContent = _d(_QA);
+  document.getElementById('mailVal').textContent = _d(_MA);
+  showToast('联系方式已解锁');
+}
+
+/* ===== 工具 ===== */
+function copyVal(id){
+  var t = document.getElementById(id).textContent;
+  var done = function(){ showToast('已复制：' + t); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done, function(){ fallbackCopy(t); done(); });
+  } else { fallbackCopy(t); done(); }
+}
+function fallbackCopy(t){
+  var ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+}
+var toastTimer = null;
+function showToast(msg){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+document.getElementById('verifyModal').addEventListener('click', function(e){
+  if (e.target === this) closeVerify();
+});
+
+/* 下载直链（最新 Release；仓库地址 base64 分段拼接，页面源码不含明文账号名） */
+(function(){
+  var seg = ['aHR0cHM6Ly9naXRodWIuY29tLw==', 'enlyMTU1NTUwODYyMzU=', 'bW94c2gtdGVybWluYWw='];
+  document.getElementById('dlLatest').href = seg.map(function(x){ return atob(x); }).join('') + '/releases/latest';
+})();
+
+/* 滚动入场动画 */
+(function(){
+  var els = document.querySelectorAll('.fadeup');
+  if (!('IntersectionObserver' in window)){ els.forEach(function(e){e.classList.add('in');}); return; }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if (en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold: 0.12 });
+  els.forEach(function(e){ io.observe(e); });
+})();
+</script>
+</body>
+</html>
