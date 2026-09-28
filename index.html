@@ -425,7 +425,7 @@ document.getElementById('verifyModal').addEventListener('click', function(e){
 
 /* 下载直链 / 社区直链（仓库地址 base64 分段拼接，页面源码不含明文账号名） */
 (function(){
-  var seg = ['aHR0cHM6Ly9naXRodWIuY29tLw==', 'enlyMTU1NTUwODYyMzU=', 'bW94c2gtdGVybWluYWw='];
+  var seg = ['aHR0cHM6Ly9naXRodWIuY29tLw==', 'Y29kZWNsb3VkLWRldg==', 'bW94c2gtdGVybWluYWw='];
   var base = seg.map(function(x){ return atob(x); }).join('');
   document.getElementById('dlLatest').href = base + '/releases/latest';
   var d = document.getElementById('discLink');
