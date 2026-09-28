@@ -107,7 +107,9 @@
   <div class="brand"><span class="dot"></span><span>Mox</span></div>
   <div class="links">
     <a href="#products">产品</a>
+    <a href="#roadmap">路线图</a>
     <a href="#download">下载</a>
+    <a href="#community">社区</a>
     <a href="#contact">联系我们</a>
     <a href="#sponsor">赞助</a>
   </div>
@@ -204,6 +206,77 @@
   <div class="card glass fadeup" style="text-align:center; padding:40px">
     <h3 style="margin-bottom:10px">赞助通道整理中</h3>
     <p>收款码与赞助者鸣谢名单即将上线。想提前支持，也可以通过上方联系方式直接联系我们。</p>
+  </div>
+</section>
+
+<section id="roadmap" class="wrap">
+  <div class="sec-title fadeup">路线图 · 我们想给终端加什么</div>
+  <p class="sec-desc fadeup">moxsh 才刚起步。下面这些，是我们打算一步步塞进「掌心的 Linux」里的东西——也欢迎来社区里加戏。</p>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <span class="tag">终端体验</span>
+      <h3>多窗口分屏</h3>
+      <p>一个屏幕开多个会话：左右分屏、标签页、滑动手势切换。手机也能当「多任务工作站」。</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="tag">账户</span>
+      <h3>命令云同步</h3>
+      <p>登录 GitHub 后，把 shell 配置、别名、历史同步到云端。换手机不丢环境，多设备一致。</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="tag">社区</span>
+      <h3>脚本 / 命令市场</h3>
+      <p>社区共享的一键脚本，`.mox` 包一键安装：装环境、配服务、跑运维，点一下就好。</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="tag">AI</span>
+      <h3>本地离线模型</h3>
+      <p>断网也能问：把小模型跑在本地，解释报错、改脚本不依赖云端，隐私不出设备。</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="tag">外设</span>
+      <h3>桌面模式</h3>
+      <p>接 OTG 键鼠、连外接显示器，手机变一台小主机：窗口、拖拽，全玻璃质感。</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="tag">个性化</span>
+      <h3>主题引擎</h3>
+      <p>液态玻璃不止一种光。自定义光晕颜色、模糊强度、反射层，把终端调成你的那一款。</p>
+    </div>
+  </div>
+</section>
+
+<section id="moxseries" class="wrap">
+  <div class="sec-title fadeup">Mox 系列 · 后面怎么做</div>
+  <p class="sec-desc fadeup">moxsh 只是第一块拼图。我们想沿着「把桌面级工具搬进掌心」这条路，慢慢长出一整个 Mox 家族。</p>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <span class="tag">已发布</span>
+      <h3>moxsh</h3>
+      <p>液态玻璃终端。掌心的 Linux 命令行，兼容 Termux 生态。</p>
+    </div>
+    <div class="card glass soon fadeup">
+      <div class="plus">+</div>
+      <h3>moxbox</h3>
+      <p>规划中：文件管理与系统套件，把手机存储、进程、网络都装进同一套玻璃界面。</p>
+    </div>
+    <div class="card glass soon fadeup">
+      <div class="plus">+</div>
+      <h3>moxcode</h3>
+      <p>规划中：移动端轻量 IDE，终端 + 编辑器 + 运行预览一体。</p>
+    </div>
+  </div>
+</section>
+
+<section id="community" class="wrap">
+  <div class="sec-title fadeup">社区</div>
+  <p class="sec-desc fadeup">这个站点只是门面。真正聊需求、报 bug、晒玩法的地方，在 GitHub Discussions——一个账号就能来。</p>
+  <div class="card glass fadeup" style="text-align:center; padding:36px">
+    <h3 style="margin-bottom:10px">来 Discussions 找我们</h3>
+    <p>功能想怎么加、Mox 系列该往哪走，都可以在社区里说。我们也在这汇总路线图和版本动态。</p>
+    <div class="actions" style="margin-top:18px; justify-content:center">
+      <a class="btn primary" id="discLink" href="#" target="_blank" rel="noopener">进入社区 →</a>
+    </div>
   </div>
 </section>
 
@@ -348,10 +421,13 @@ document.getElementById('verifyModal').addEventListener('click', function(e){
   if (e.target === this) closeVerify();
 });
 
-/* 下载直链（最新 Release；仓库地址 base64 分段拼接，页面源码不含明文账号名） */
+/* 下载直链 / 社区直链（仓库地址 base64 分段拼接，页面源码不含明文账号名） */
 (function(){
   var seg = ['aHR0cHM6Ly9naXRodWIuY29tLw==', 'enlyMTU1NTUwODYyMzU=', 'bW94c2gtdGVybWluYWw='];
-  document.getElementById('dlLatest').href = seg.map(function(x){ return atob(x); }).join('') + '/releases/latest';
+  var base = seg.map(function(x){ return atob(x); }).join('');
+  document.getElementById('dlLatest').href = base + '/releases/latest';
+  var d = document.getElementById('discLink');
+  if (d) d.href = base + '/discussions';
 })();
 
 /* 滚动入场动画 */
