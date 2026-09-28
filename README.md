@@ -8,6 +8,8 @@
 
 <p align="center"><b>MoX 工具系列官方站</b> —— 产品展示、下载入口与社区，都在这里。</p>
 
+<p align="center"><a href="index.html">中文</a> · <a href="index.en.html">English</a></p>
+
 ---
 
 ## 这是什么
