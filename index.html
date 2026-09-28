@@ -3,333 +3,289 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Mox · 让掌心装下整个 Linux</title>
-<meta name="description" content="Mox 系列官方站 —— moxsh 液态玻璃终端、mox-id 身份后端、mox-site 门户，以及规划中的 moxbox / moxcode。产品下载、联系方式与赞助入口。">
+<title>moxsh · 掌心的液态玻璃终端</title>
+<meta name="description" content="moxsh —— 跑在 Android 上的液态玻璃终端。Rust 自研内核，全面兼容 Termux 生态，无需 root、装上即用。">
 <meta name="color-scheme" content="dark">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  :root {
-    --bg0:#070912; --bg1:#0d1124; --bg2:#120f2b;
-    --glass:linear-gradient(135deg, rgba(255,255,255,.11), rgba(255,255,255,.035));
-    --glass-strong:linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
-    --stroke:rgba(255,255,255,.14); --stroke-hi:rgba(255,255,255,.30);
-    --text:rgba(255,255,255,.94); --dim:rgba(255,255,255,.56); --faint:rgba(255,255,255,.34);
-    --a1:#37d5d3; --a2:#8a7bff; --a3:#ff7ac3; --a4:#ffd27a;
-    --radius:24px; --radius-sm:16px;
-    --mx:50%; --my:20%;
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --bg:#06070d;
+    --text:rgba(237,240,252,.92);
+    --dim:rgba(237,240,252,.58);
+    --faint:rgba(237,240,252,.34);
+    --stroke:rgba(255,255,255,.09);
+    --stroke-hi:rgba(255,255,255,.18);
+    --glass:rgba(255,255,255,.045);
+    --glass-2:rgba(255,255,255,.07);
+    --accent-a:#5eead4;
+    --accent-b:#818cf8;
+    --accent:linear-gradient(120deg,#5eead4,#818cf8);
+    --radius:22px;
+    --mx:50%;--my:20%;
   }
-  html { scroll-behavior:smooth; }
-  body {
-    color:var(--text); min-height:100vh; overflow-x:hidden; position:relative;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans SC","Microsoft YaHei",sans-serif;
+  html{scroll-behavior:smooth}
+  body{
+    color:var(--text);min-height:100vh;overflow-x:hidden;position:relative;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  /* 极淡的环境光，不抢戏 */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
     background:
-      radial-gradient(48rem 38rem at 12% -8%, rgba(55,213,211,.14), transparent 60%),
-      radial-gradient(46rem 34rem at 108% 14%, rgba(138,123,255,.18), transparent 60%),
-      radial-gradient(40rem 40rem at 50% 120%, rgba(255,122,195,.10), transparent 60%),
-      linear-gradient(180deg,var(--bg0),var(--bg1) 45%,var(--bg2));
-    background-attachment:fixed;
+      radial-gradient(60rem 50rem at 12% -10%, rgba(94,234,212,.08), transparent 55%),
+      radial-gradient(56rem 46rem at 105% 8%, rgba(129,140,248,.10), transparent 55%),
+      radial-gradient(50rem 50rem at 50% 115%, rgba(129,140,248,.05), transparent 55%);
   }
-  /* 流动极光层 */
-  body::before {
-    content:""; position:fixed; inset:-20% -20% -20% -20%; z-index:-1; pointer-events:none;
-    background:
-      radial-gradient(32rem 32rem at 20% 30%, rgba(138,123,255,.20), transparent 60%),
-      radial-gradient(28rem 28rem at 80% 60%, rgba(55,213,211,.16), transparent 60%),
-      radial-gradient(30rem 30rem at 60% 85%, rgba(255,122,195,.12), transparent 60%);
-    filter:blur(20px); opacity:.9;
-    animation:aurora 26s ease-in-out infinite alternate;
+  /* 缓慢漂移的低饱和光晕 */
+  body::after{
+    content:"";position:fixed;inset:-25%;z-index:-3;pointer-events:none;filter:blur(60px);opacity:.5;
+    background:radial-gradient(28rem 28rem at 25% 35%, rgba(129,140,248,.16), transparent 60%),
+               radial-gradient(26rem 26rem at 78% 62%, rgba(94,234,212,.12), transparent 60%);
+    animation:drift 32s ease-in-out infinite alternate;
   }
-  @keyframes aurora {
-    0%   { transform:translate3d(-3%,-2%,0) scale(1.05) rotate(0deg); }
-    50%  { transform:translate3d(4%,3%,0) scale(1.12) rotate(8deg); }
-    100% { transform:translate3d(-2%,4%,0) scale(1.06) rotate(-6deg); }
-  }
-  ::selection { background:rgba(138,123,255,.4); }
-  a { color:inherit; }
+  @keyframes drift{0%{transform:translate3d(-2%,-1%,0) scale(1.05)}100%{transform:translate3d(3%,2%,0) scale(1.1)}}
+  ::selection{background:rgba(129,140,248,.32)}
+  a{color:inherit;text-decoration:none}
 
-  /* ===== 真正的液态玻璃 ===== */
-  .glass {
-    position:relative; isolation:isolate;
-    background:var(--glass);
-    border:1px solid var(--stroke); border-radius:var(--radius);
-    backdrop-filter:blur(24px) saturate(170%); -webkit-backdrop-filter:blur(24px) saturate(170%);
-    box-shadow:
-      0 18px 50px -16px rgba(0,0,0,.55),
-      inset 0 1px 0 rgba(255,255,255,.28),
-      inset 0 -1px 0 rgba(255,255,255,.04),
-      inset 0 0 36px rgba(255,255,255,.03);
-    overflow:hidden;
-  }
-  /* 顶部高光 + 折射边 */
-  .glass::before {
-    content:""; position:absolute; inset:0; z-index:1; pointer-events:none; border-radius:inherit;
-    background:linear-gradient(135deg, rgba(255,255,255,.35), rgba(255,255,255,0) 32%,
-              rgba(255,255,255,0) 70%, rgba(255,255,255,.10));
-    mix-blend-mode:screen; opacity:.55;
-  }
-  /* 鼠标光斑（液态反光） */
-  .glass::after {
-    content:""; position:absolute; inset:0; z-index:0; pointer-events:none; border-radius:inherit;
-    background:radial-gradient(22rem 22rem at var(--mx) var(--my), rgba(255,255,255,.16), transparent 55%);
-    opacity:0; transition:opacity .4s; mix-blend-mode:screen;
-  }
-  .glass:hover::after { opacity:1; }
+  /* ===== 玻璃基底 ===== */
+  .glass{position:relative;isolation:isolate;background:var(--glass);
+    border:1px solid var(--stroke);border-radius:var(--radius);
+    backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);
+    box-shadow:0 22px 55px -26px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.14);
+    overflow:hidden;}
+  /* 顶部高光反射 */
+  .glass::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;
+    background:linear-gradient(160deg, rgba(255,255,255,.22), rgba(255,255,255,0) 30%, rgba(255,255,255,0) 72%, rgba(255,255,255,.06));
+    mix-blend-mode:screen;opacity:.7;}
+  /* 指针光斑 */
+  .glass::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;
+    background:radial-gradient(20rem 20rem at var(--mx) var(--my), rgba(255,255,255,.10), transparent 55%);
+    opacity:0;transition:opacity .5s;mix-blend-mode:screen;}
+  .glass:hover::after{opacity:1}
 
-  .wrap { width:min(1100px,92vw); margin:0 auto; }
-  nav { position:sticky; top:14px; z-index:50; width:min(1100px,92vw); margin:14px auto 0;
-        display:flex; align-items:center; gap:18px; padding:13px 22px; }
-  .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:.6px; font-size:17px; }
-  .brand .dot { width:28px; height:28px; border-radius:10px; flex:none;
-    background:conic-gradient(from 200deg,var(--a1),var(--a2),var(--a3),var(--a4),var(--a1));
-    box-shadow:0 0 22px rgba(138,123,255,.6), inset 0 1px 2px rgba(255,255,255,.6); }
-  nav .links { margin-left:auto; display:flex; gap:3px; flex-wrap:wrap; }
-  nav a { color:var(--dim); text-decoration:none; font-size:14px; padding:8px 14px; border-radius:12px; transition:.22s; }
-  nav a:hover { color:var(--text); background:rgba(255,255,255,.08); }
+  .wrap{width:min(1080px,90vw);margin:0 auto}
+  nav{position:sticky;top:16px;z-index:50;width:min(1080px,90vw);margin:16px auto 0;
+    display:flex;align-items:center;gap:20px;padding:13px 22px;}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:17px;letter-spacing:-.01em}
+  .brand .mark{width:26px;height:26px;border-radius:8px;flex:none;
+    background:var(--accent);box-shadow:0 4px 16px rgba(129,140,248,.35), inset 0 1px 1px rgba(255,255,255,.5);position:relative;overflow:hidden}
+  .brand .mark::after{content:"";position:absolute;inset:0;background:linear-gradient(150deg,rgba(255,255,255,.55),transparent 45%);}
+  nav .links{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+  nav a{color:var(--dim);font-size:14px;padding:8px 14px;border-radius:11px;transition:.2s}
+  nav a:hover{color:var(--text);background:rgba(255,255,255,.06)}
 
-  header { text-align:center; padding:clamp(70px,13vh,140px) 0 40px; position:relative; }
-  header::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
-    background:radial-gradient(40rem 32rem at var(--mx) var(--my), rgba(138,123,255,.16), transparent 60%); }
-  .kicker { display:inline-block; position:relative; font-size:13px; color:var(--dim); border:1px solid var(--stroke);
-            border-radius:999px; padding:7px 18px; background:rgba(255,255,255,.05); letter-spacing:3px; backdrop-filter:blur(8px); }
-  h1 { position:relative; margin:28px 0 20px; font-size:clamp(40px,8.5vw,78px); line-height:1.1; letter-spacing:.5px; font-weight:850; }
-  h1 .grad { background:linear-gradient(100deg,var(--a1),var(--a2) 50%,var(--a3));
-             -webkit-background-clip:text; background-clip:text; color:transparent;
-             filter:drop-shadow(0 4px 30px rgba(138,123,255,.35)); }
-  .sub { position:relative; color:var(--dim); font-size:clamp(15px,2.4vw,18px); max-width:660px; margin:0 auto; line-height:1.95; }
+  header{padding:clamp(56px,11vh,120px) 0 30px;text-align:center;position:relative}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);
+    border:1px solid var(--stroke);border-radius:999px;padding:7px 16px;background:rgba(255,255,255,.03);backdrop-filter:blur(8px)}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-a);box-shadow:0 0 10px var(--accent-a)}
+  h1{margin:26px 0 18px;font-size:clamp(42px,7.6vw,80px);line-height:1.04;letter-spacing:-.035em;font-weight:700}
+  h1 .em{background:var(--accent);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:clamp(15px,2.1vw,18px);max-width:600px;margin:0 auto;line-height:1.7}
+  .hero-cta{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;padding:14px 26px;border-radius:14px;
+    font-size:15px;font-weight:600;border:1px solid var(--stroke);color:var(--text);background:var(--glass);
+    backdrop-filter:blur(12px);transition:transform .2s ease, background .2s, box-shadow .2s}
+  .btn:hover{transform:translateY(-2px);background:var(--glass-2)}
+  .btn.primary{background:var(--accent);border-color:transparent;color:#06121a;font-weight:700;
+    box-shadow:0 12px 34px -10px rgba(129,140,248,.55), inset 0 1px 0 rgba(255,255,255,.45)}
+  .btn.primary:hover{box-shadow:0 18px 44px -10px rgba(129,140,248,.7), inset 0 1px 0 rgba(255,255,255,.5)}
 
-  /* 手机玻璃终端预览 */
-  .device { position:relative; width:min(330px,82vw); margin:46px auto 0; aspect-ratio:9/19; border-radius:42px;
-    padding:13px; background:var(--glass); border:1px solid var(--stroke-hi);
-    backdrop-filter:blur(26px) saturate(170%); -webkit-backdrop-filter:blur(26px) saturate(170%);
-    box-shadow:0 40px 90px -30px rgba(0,0,0,.7), inset 0 2px 0 rgba(255,255,255,.3), inset 0 0 50px rgba(138,123,255,.08); }
-  .device .screen { width:100%; height:100%; border-radius:30px; overflow:hidden; position:relative;
-    background:linear-gradient(180deg,#0a0d1c,#0c1026);
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); padding:18px 14px; font-family:"SF Mono",ui-monospace,Menlo,monospace; }
-  .device .notch { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:88px; height:7px; border-radius:99px;
-    background:rgba(0,0,0,.5); box-shadow:inset 0 1px 1px rgba(255,255,255,.15); }
-  .screen .ln { font-size:11px; line-height:1.75; color:rgba(255,255,255,.82); white-space:pre-wrap; }
-  .screen .ln .p { color:var(--a1); } .screen .ln .c { color:var(--a3); } .screen .ln .g { color:var(--a4); }
-  .screen .bar { height:5px; border-radius:9px; background:linear-gradient(90deg,var(--a1),var(--a2),var(--a3)); margin:10px 0 8px; box-shadow:0 0 12px rgba(138,123,255,.5); }
+  /* 手机玻璃预览 */
+  .stage{margin:54px auto 0;display:flex;justify-content:center;perspective:1600px}
+  .device{position:relative;width:min(300px,78vw);aspect-ratio:9/19;border-radius:44px;padding:11px;
+    background:linear-gradient(150deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+    border:1px solid var(--stroke-hi);backdrop-filter:blur(26px) saturate(170%);
+    box-shadow:0 50px 110px -34px rgba(0,0,0,.8), inset 0 2px 0 rgba(255,255,255,.28), inset 0 0 50px rgba(129,140,248,.08);
+    transform:rotateX(4deg) rotateY(-7deg);transition:transform .6s ease}
+  .device:hover{transform:rotateX(0) rotateY(0)}
+  .device .screen{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;
+    background:linear-gradient(180deg,#0a0d1c,#0b0f24);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    padding:20px 16px;font-family:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace}
+  .device .notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:82px;height:7px;border-radius:99px;
+    background:rgba(0,0,0,.55);box-shadow:inset 0 1px 1px rgba(255,255,255,.12);z-index:2}
+  .ln{font-size:11.5px;line-height:1.85;color:rgba(237,240,252,.82);white-space:pre-wrap}
+  .ln .p{color:var(--accent-a)} .ln .c{color:var(--accent-b)} .ln .g{color:rgba(237,240,252,.5)}
+  .ln .cur{display:inline-block;width:7px;height:14px;vertical-align:-2px;background:var(--accent-a);
+    border-radius:1px;animation:blink 1.1s steps(1) infinite;box-shadow:0 0 8px var(--accent-a)}
+  @keyframes blink{50%{opacity:0}}
 
-  .hero-cta { position:relative; margin-top:36px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
-  .btn { display:inline-flex; align-items:center; gap:8px; cursor:pointer; padding:14px 28px;
-         border-radius:15px; font-size:15px; font-weight:650; border:1px solid var(--stroke);
-         color:var(--text); text-decoration:none; background:var(--glass);
-         backdrop-filter:blur(14px); transition:transform .22s, background .22s, box-shadow .22s; }
-  .btn:hover { transform:translateY(-3px); background:var(--glass-strong); box-shadow:0 14px 34px -12px rgba(0,0,0,.6); }
-  .btn.primary { background:linear-gradient(100deg,rgba(55,213,211,.28),rgba(138,123,255,.34));
-                 border-color:rgba(138,123,255,.5); box-shadow:0 10px 32px rgba(138,123,255,.3), inset 0 1px 0 rgba(255,255,255,.3); }
-  .btn.primary:hover { box-shadow:0 18px 44px rgba(138,123,255,.45), inset 0 1px 0 rgba(255,255,255,.4); }
+  section{padding:clamp(56px,9vh,96px) 0}
+  .sec-head{max-width:680px;margin-bottom:42px}
+  .sec-title{font-size:clamp(26px,4.4vw,38px);font-weight:700;letter-spacing:-.025em;margin-bottom:12px}
+  .sec-desc{color:var(--dim);font-size:16px;line-height:1.75}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  .card{padding:28px;transition:transform .3s ease, box-shadow .3s ease}
+  .card:hover{transform:translateY(-5px)}
+  .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;margin-bottom:18px;
+    background:rgba(129,140,248,.12);border:1px solid rgba(129,140,248,.22)}
+  .ico svg{width:21px;height:21px;stroke:var(--accent-b);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .card h3{font-size:18px;letter-spacing:-.01em;margin-bottom:8px;font-weight:650}
+  .card p{color:var(--dim);font-size:14px;line-height:1.75}
 
-  section { padding:54px 0; }
-  .sec-title { font-size:clamp(23px,4vw,32px); font-weight:780; margin-bottom:8px; letter-spacing:.3px; }
-  .sec-desc { color:var(--dim); font-size:15px; margin-bottom:34px; line-height:1.85; max-width:720px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:22px; }
-  .card { padding:30px; transition:transform .28s, box-shadow .28s; }
-  .card:hover { transform:translateY(-6px); box-shadow:0 26px 64px -20px rgba(0,0,0,.65),
-      inset 0 1px 0 rgba(255,255,255,.32), inset 0 0 40px rgba(255,255,255,.05); }
-  .card .tag { display:inline-block; font-size:12px; padding:5px 13px; border-radius:999px;
-    border:1px solid rgba(55,213,211,.5); color:var(--a1); letter-spacing:1px; margin-bottom:16px; font-weight:600; }
-  .card .tag.wip { border-color:rgba(138,123,255,.5); color:var(--a2); }
-  .card .tag.live { border-color:rgba(123,230,179,.5); color:#7be6b3; }
-  .card h3 { font-size:23px; margin-bottom:10px; letter-spacing:.3px; }
-  .card p { color:var(--dim); font-size:14px; line-height:1.9; }
-  .card .feat { list-style:none; margin:16px 0 22px; }
-  .card .feat li { color:var(--dim); font-size:13.5px; line-height:2.15; }
-  .card .feat li::before { content:"◆ "; color:var(--a1); font-size:9px; vertical-align:3px; }
-  .card .actions { display:flex; gap:10px; flex-wrap:wrap; }
-  .card .btn { padding:11px 19px; font-size:14px; }
-  .soon { border-style:dashed; opacity:.9; display:flex; flex-direction:column; align-items:center; justify-content:center;
-          text-align:center; min-height:250px; color:var(--dim); }
-  .soon .plus { font-size:42px; margin-bottom:12px; opacity:.5;
-    background:linear-gradient(135deg,var(--a1),var(--a2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  /* 规划 / 待定 */
+  .plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  .plan{padding:30px;border:1px dashed var(--stroke);border-radius:var(--radius);background:rgba(255,255,255,.02)}
+  .plan .tag{font-size:12px;color:var(--accent-b);letter-spacing:.06em;margin-bottom:14px;display:inline-block;
+    border:1px solid rgba(129,140,248,.3);border-radius:999px;padding:4px 12px}
+  .plan h3{font-size:20px;font-weight:650;margin-bottom:10px;letter-spacing:-.01em}
+  .plan p{color:var(--dim);font-size:14px;line-height:1.75}
+  .plan .note{margin-top:14px;font-size:12.5px;color:var(--faint);line-height:1.7}
 
-  .contact-box { padding:38px; text-align:center; }
-  .contact-box .tip { color:var(--dim); font-size:14px; margin:10px 0 22px; line-height:1.85; }
-  #captchaCanvas { border-radius:14px; border:1px solid var(--stroke); display:block; margin:0 auto 14px; }
-  #answer { width:100%; padding:14px 16px; border-radius:14px; border:1px solid var(--stroke);
-    background:rgba(0,0,0,.28); color:var(--text); font-size:16px; outline:none; text-align:center; letter-spacing:5px; }
-  #answer:focus { border-color:var(--a2); box-shadow:0 0 0 3px rgba(138,123,255,.18); }
-  .vbtn { margin-top:14px; width:100%; }
-  .vmsg { font-size:13px; margin-top:10px; min-height:18px; }
-  .vmsg.err { color:#ff8f8f; } .vmsg.ok { color:#7be6b3; }
-  #contactCards { display:none; gap:16px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
-  .citem { padding:22px 28px; text-align:left; min-width:250px; }
-  .citem .label { font-size:12.5px; color:var(--dim); letter-spacing:1px; margin-bottom:8px; }
-  .citem .val { font-size:19px; font-weight:750; letter-spacing:1px; word-break:break-all; }
-  .citem .copy { margin-top:12px; font-size:13px; padding:8px 16px; }
+  /* 下载 */
+  .dl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  .dl{padding:30px;display:flex;flex-direction:column}
+  .dl h3{font-size:19px;font-weight:650;margin-bottom:8px}
+  .dl p{color:var(--dim);font-size:14px;line-height:1.75;flex:1}
+  .dl .btn{margin-top:20px;align-self:flex-start}
 
-  footer { padding:64px 0 44px; text-align:center; color:var(--dim); font-size:13px; line-height:2.2; }
-  footer a { color:var(--dim); text-decoration:none; }
-  footer .brandf { display:inline-flex; align-items:center; gap:9px; font-weight:750; color:var(--text); margin-bottom:10px; font-size:15px; }
+  /* 联系 */
+  .contact{max-width:560px;margin:0 auto;text-align:center;padding:40px}
+  .contact p{color:var(--dim);font-size:15px;line-height:1.8;margin-bottom:24px}
+  #contactCards{display:none;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+  #contactCards.show{display:flex}
+  .citem{padding:20px 26px;text-align:left;min-width:230px}
+  .citem .label{font-size:12px;color:var(--dim);letter-spacing:.08em;margin-bottom:7px}
+  .citem .val{font-size:18px;font-weight:650;letter-spacing:.02em;word-break:break-all}
+  .citem .copy{margin-top:12px;font-size:13px;padding:7px 15px}
 
-  .modal { position:fixed; inset:0; z-index:99; display:none; align-items:center; justify-content:center;
-           background:rgba(4,6,14,.7); backdrop-filter:blur(10px); padding:20px; }
-  .modal.open { display:flex; }
-  .modal .mbox { width:min(420px,94vw); padding:32px; position:relative; }
-  .modal h3 { margin-bottom:6px; } .modal .mdesc { color:var(--dim); font-size:13.5px; margin-bottom:18px; line-height:1.7; }
-  .modal .close { position:absolute; top:14px; right:18px; cursor:pointer; color:var(--dim); font-size:24px; line-height:1; }
-  .fadeup { opacity:0; transform:translateY(28px); transition:opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
-  .fadeup.in { opacity:1; transform:none; }
-  .toast { position:fixed; left:50%; bottom:38px; transform:translateX(-50%) translateY(20px);
-    background:var(--glass-strong); border:1px solid var(--stroke); border-radius:14px;
-    padding:13px 24px; font-size:14px; opacity:0; pointer-events:none; transition:.3s; z-index:120; backdrop-filter:blur(16px); }
-  .toast.show { opacity:1; transform:translateX(-50%); }
+  footer{padding:60px 0 44px;text-align:center;color:var(--dim);font-size:13px;line-height:2.1}
+  footer .fb{display:inline-flex;align-items:center;gap:9px;font-weight:650;color:var(--text);margin-bottom:12px;font-size:15px}
+  footer a{color:var(--dim)} footer a:hover{color:var(--text)}
+
+  .fadeup{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1)}
+  .fadeup.in{opacity:1;transform:none}
+  .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:var(--glass-2);
+    border:1px solid var(--stroke);border-radius:13px;padding:12px 22px;font-size:14px;opacity:0;pointer-events:none;
+    transition:.3s;z-index:120;backdrop-filter:blur(16px);box-shadow:0 14px 40px -16px rgba(0,0,0,.7)}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.fadeup{opacity:1;transform:none}}
 </style>
 </head>
 <body>
 <nav class="glass">
-  <div class="brand"><span class="dot"></span><span>Mox</span></div>
+  <div class="brand"><span class="mark"></span><span>moxsh</span></div>
   <div class="links">
-    <a href="#products">产品</a>
-    <a href="#family">家族</a>
-    <a href="#roadmap">路线图</a>
+    <a href="#features">特性</a>
     <a href="#download">下载</a>
-    <a href="#community">社区</a>
-    <a href="#contact">联系我们</a>
-    <a href="#sponsor">赞助</a>
-    <!-- 登录：经后端 mox-id 走 GitHub OAuth，部署后端后生效（Cloudflare 待配置，链接暂保留） -->
-    <a href="https://mox-id.zyr15555086235.workers.dev/auth/github/start">登录</a>
+    <a href="#plans">规划</a>
+    <a href="#contact">联系</a>
   </div>
 </nav>
 
-<header>
-  <div class="kicker">MOX SERIES · 官方站</div>
-  <h1>让掌心装下<br><span class="grad">整个 Linux</span></h1>
-  <p class="sub">Mox 是一个正在生长的工具系列。第一款产品 moxsh ——
-      跑在 Android 上的液态玻璃终端：Rust 自研内核，配一整套美得像水的界面。</p>
-
-  <div class="device" aria-hidden="true">
-    <div class="notch"></div>
-    <div class="screen">
-      <div class="ln"><span class="p">moxsh</span> <span class="c">❯</span> neofetch</div>
-      <div class="ln"><span class="g">moxsh</span> 2.1.0 · Android 15</div>
-      <div class="ln">Rust 内核 · 120Hz 渲染</div>
-      <div class="bar"></div>
-      <div class="ln"><span class="p">moxsh</span> <span class="c">❯</span> pkg install neovim</div>
-      <div class="ln">resolving… <span class="g">done</span></div>
-      <div class="ln">fetching… <span class="g">done</span></div>
-      <div class="bar"></div>
-      <div class="ln"><span class="p">moxsh</span> <span class="c">❯</span> <span class="g">█</span>_</div>
-    </div>
-  </div>
+<header class="wrap">
+  <span class="eyebrow"><span class="dot"></span>Android · 液态玻璃终端</span>
+  <h1>掌心的 Linux，<br><span class="em">重新设计过</span>。</h1>
+  <p class="sub">moxsh 是跑在 Android 上的终端：Rust 自研内核，全面兼容 Termux 生态。无需 root、无需配置，装上即用。</p>
 
   <div class="hero-cta">
     <a class="btn primary" href="#download">获取 moxsh</a>
-    <a class="btn" href="#family">认识 MoX 家族</a>
+    <a class="btn" href="#features">看看它强在哪</a>
+  </div>
+
+  <div class="stage">
+    <div class="device glass" aria-hidden="true">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="ln"><span class="p">moxsh</span> <span class="c">❯</span> neofetch</div>
+        <div class="ln"><span class="g">moxsh</span> 2.1.0 · Android 15</div>
+        <div class="ln">Rust 内核 · 120Hz 渲染</div>
+        <div class="ln"> </div>
+        <div class="ln"><span class="p">moxsh</span> <span class="c">❯</span> pkg install neovim</div>
+        <div class="ln">resolving… <span class="g">done</span></div>
+        <div class="ln">fetching…  <span class="g">done</span></div>
+        <div class="ln"> </div>
+        <div class="ln"><span class="p">moxsh</span> <span class="c">❯</span> <span class="cur"></span></div>
+      </div>
+    </div>
   </div>
 </header>
 
-<section id="products" class="wrap">
-  <div class="sec-title fadeup">已上线的产品</div>
-  <p class="sec-desc fadeup">每一个 Mox 产品，都遵循同一套审美与工程标准 —— 液态玻璃，且真性能。</p>
+<section id="features" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">为「快」与「美」造的终端</div>
+    <p class="sec-desc">内核用 Rust 重写，界面用液态玻璃重绘。每一项体验，都从底层重新考虑过。</p>
+  </div>
   <div class="grid">
     <div class="card glass fadeup">
-      <span class="tag live">MOXSH · 已上线</span>
-      <h3>moxsh</h3>
-      <p>Android 液态玻璃终端。整颗应用从内核到 UI 都为「快」与「美」重新造过一遍轮子。</p>
-      <ul class="feat">
-        <li>Rust 自研内核：NEON 加速、增量渲染、脏区跟踪</li>
-        <li>全面兼容 Termux 包生态，*.deb 直接可装</li>
-        <li>proot 发行版管理：Ubuntu / Debian / Kali 一键开箱</li>
-        <li>插件体系：AI 技能、悬浮玻璃终端、桌面小部件</li>
-        <li>加固本地 IPC：挑战-响应 + HMAC-SHA256 鉴权</li>
-      </ul>
-      <div class="actions"><a class="btn primary" href="#download">下载</a></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H7l-3 3V5z"/><path d="M8 9l3 3-3 3"/><path d="M13 15h3"/></svg></div>
+      <h3>Rust 内核</h3>
+      <p>PTY、VT 解析、回滚、渲染调度、包管理验签全部用 Rust，内存安全且快。</p>
     </div>
-
     <div class="card glass fadeup">
-      <span class="tag live">MOX-ID · 已上线</span>
-      <h3>mox-id</h3>
-      <p>MoX 系列的统一身份后端。轻量、可自托管，一个账号打通全部 Mox 产品。</p>
-      <ul class="feat">
-        <li>GitHub OAuth 登录，零密码</li>
-        <li>可扩展账号 / 设备 / 会话模型</li>
-        <li>命令云同步、配置漫游的鉴权底座</li>
-        <li>部署在 Cloudflare Workers，边缘低延迟</li>
-      </ul>
-      <div class="actions"><a class="btn" href="#contact">接入咨询</a></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z"/></svg></div>
+      <h3>液态玻璃界面</h3>
+      <p>实时模糊、半透明层级、顶部高光反射与折射边——像真玻璃，不像贴图。</p>
     </div>
-
     <div class="card glass fadeup">
-      <span class="tag live">MOX-SITE · 本页</span>
-      <h3>mox-site</h3>
-      <p>MoX 系列官方门户。产品展示、下载入口、社区与赞助，都在这里。</p>
-      <ul class="feat">
-        <li>液态玻璃设计语言样板间</li>
-        <li>产品家族统一门户</li>
-        <li>联系方式防爬验证</li>
-        <li>持续随系列演进</li>
-      </ul>
-      <div class="actions"><a class="btn" href="#family">看家族 →</a></div>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+      <h3>Termux 兼容</h3>
+      <p>直接吃 Termux 官方源，<code>*.deb</code> 能装能跑，命令用法与生态完全一致。</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 7h.01M7 17h.01"/></svg></div>
+      <h3>PRoot 发行版</h3>
+      <p>Ubuntu / Debian / Kali / Alpine 一键安装，隔离环境随便玩，不碰系统。</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M18 15l.9 2.3L21 18l-2.1.7L18 21l-.9-2.3L15 18l2.1-.7z"/></svg></div>
+      <h3>AI 助手</h3>
+      <p>解释报错、写脚本、管环境；支持 DeepSeek / 智谱 / 通义 / Kimi 等模型。</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <h3>加固 IPC</h3>
+      <p>挑战-响应 + HMAC-SHA256 鉴权，跨进程调用不裸奔，插件也安全。</p>
     </div>
   </div>
 </section>
 
-<section id="family" class="wrap">
-  <div class="sec-title fadeup">MoX 家族 · 后面怎么做</div>
-  <p class="sec-desc fadeup">moxsh 只是第一块拼图。我们想沿着「把桌面级工具搬进掌心」这条路，慢慢长出一整个 Mox 家族。</p>
-  <div class="grid">
-    <div class="card glass fadeup">
-      <span class="tag live">已上线</span>
-      <h3>moxsh</h3>
-      <p>液态玻璃终端。掌心的 Linux 命令行，兼容 Termux 生态。</p>
-    </div>
-    <div class="card glass fadeup">
-      <span class="tag live">已上线</span>
-      <h3>mox-id</h3>
-      <p>统一身份后端。一个账号，打通全部 Mox 产品。</p>
-    </div>
-    <div class="card glass fadeup">
-      <span class="tag live">已上线</span>
-      <h3>mox-site</h3>
-      <p>系列官方门户。产品、下载、社区、赞助的入口。</p>
-    </div>
-    <div class="card glass soon fadeup">
-      <div class="plus">+</div>
+<section id="plans" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">未来规划 · 待定</div>
+    <p class="sec-desc">moxsh 之后，我们想沿着「把桌面级工具搬进掌心」继续探索。下面只是<b>可能的方向</b>——<b>可能做，也可能永远不做</b>，一切以实际发布为准。</p>
+  </div>
+  <div class="plans">
+    <div class="plan fadeup">
+      <span class="tag">规划中 · 待定</span>
       <h3>moxbox</h3>
-      <p>规划中：文件管理与系统套件，把手机存储、进程、网络都装进同一套玻璃界面。</p>
+      <p>文件管理与系统套件：把手机存储、进程、网络都装进同一套玻璃界面。</p>
+      <div class="note">※ 尚处于设想阶段，不代表任何发布承诺。</div>
     </div>
-    <div class="card glass soon fadeup">
-      <div class="plus">+</div>
+    <div class="plan fadeup">
+      <span class="tag">规划中 · 待定</span>
       <h3>moxcode</h3>
-      <p>规划中：移动端轻量 IDE，终端 + 编辑器 + 运行预览一体。</p>
+      <p>移动端轻量 IDE：终端 + 编辑器 + 运行预览一体，掌心里写代码。</p>
+      <div class="note">※ 尚处于设想阶段，可能推进，也可能取消。</div>
     </div>
   </div>
 </section>
 
 <section id="download" class="wrap">
-  <div class="sec-title fadeup">下载 moxsh</div>
-  <p class="sec-desc fadeup">安装包持续随代码构建发布。两种获取方式任选。</p>
-  <div class="grid">
-    <div class="card glass fadeup">
-      <span class="tag wip">直连下载</span>
+  <div class="sec-head fadeup">
+    <div class="sec-title">下载 moxsh</div>
+    <p class="sec-desc">安装包随代码持续构建发布。两种方式任选。</p>
+  </div>
+  <div class="dl-grid">
+    <div class="dl glass fadeup">
       <h3>Release 安装包</h3>
-      <p>最新自动构建的正式签名 APK。如果你的网络可以访问 GitHub，这是最快的方式。</p>
-      <div class="actions" style="margin-top:18px">
-        <a class="btn primary" id="dlLatest" href="#" target="_blank" rel="noopener">前往下载页 →</a>
-      </div>
+      <p>最新自动构建的正式签名 APK。网络可访问 GitHub 时，这是最快的方式。</p>
+      <a class="btn primary" id="dlLatest" href="#" target="_blank" rel="noopener">前往下载页 →</a>
     </div>
-    <div class="card glass fadeup">
-      <span class="tag wip">人工通道</span>
+    <div class="dl glass fadeup">
       <h3>联系获取</h3>
-      <p>网络不便或想要尝鲜构建？通过下方联系方式加 QQ，直接把安装包发给你。</p>
-      <div class="actions" style="margin-top:18px">
-        <a class="btn" href="#contact">查看联系方式 ↓</a>
-      </div>
+      <p>网络不便或想尝鲜构建？通过下方联系方式找到我们，直接把安装包发给你。</p>
+      <a class="btn" href="#contact">查看联系方式 ↓</a>
     </div>
   </div>
 </section>
 
 <section id="contact" class="wrap">
-  <div class="sec-title fadeup">联系我们</div>
-  <p class="sec-desc fadeup">产品反馈、共建合作、获取安装包，都可以直接找到我们。
-      为了不让机器人把联系方式爬走，需要先完成一个 3 秒的小验证。</p>
-  <div class="glass contact-box fadeup">
-    <div id="verifyEntry">
-      <p class="tip">点下方按钮，完成人机验证后即可查看联系方式。</p>
-      <button class="btn primary" onclick="openVerify()">验证并查看联系方式</button>
-    </div>
+  <div class="glass contact fadeup">
+    <div class="sec-title" style="font-size:26px">联系我们</div>
+    <p>产品反馈、共建合作、获取安装包，都可以直接找到我们。联系方式默认隐藏，点一下即可查看。</p>
+    <button class="btn primary" onclick="revealContact()">显示联系方式</button>
     <div id="contactCards">
       <div class="citem glass">
         <div class="label">QQ</div>
@@ -345,155 +301,50 @@
   </div>
 </section>
 
-<section id="sponsor" class="wrap">
-  <div class="sec-title fadeup">赞助支持</div>
-  <p class="sec-desc fadeup">Mox 系列全程免费开放。如果它帮到了你，赞助是对独立开发最直接的支持。</p>
-  <div class="card glass fadeup" style="text-align:center; padding:42px">
-    <h3 style="margin-bottom:10px">赞助通道整理中</h3>
-    <p>收款码与赞助者鸣谢名单即将上线。想提前支持，也可以通过上方联系方式直接联系我们。</p>
-  </div>
-</section>
-
-<section id="roadmap" class="wrap">
-  <div class="sec-title fadeup">路线图 · 我们想给终端加什么</div>
-  <p class="sec-desc fadeup">moxsh 才刚起步。下面这些，是我们打算一步步塞进「掌心的 Linux」里的东西——也欢迎来社区里加戏。</p>
-  <div class="grid">
-    <div class="card glass fadeup"><span class="tag">终端体验</span><h3>多窗口分屏</h3><p>一个屏幕开多个会话：左右分屏、标签页、滑动手势切换。手机也能当「多任务工作站」。</p></div>
-    <div class="card glass fadeup"><span class="tag">账户</span><h3>命令云同步</h3><p>登录后，把 shell 配置、别名、历史同步到云端。换手机不丢环境，多设备一致。</p></div>
-    <div class="card glass fadeup"><span class="tag">社区</span><h3>脚本 / 命令市场</h3><p>社区共享的一键脚本，`.mox` 包一键安装：装环境、配服务、跑运维，点一下就好。</p></div>
-    <div class="card glass fadeup"><span class="tag">AI</span><h3>本地离线模型</h3><p>断网也能问：把小模型跑在本地，解释报错、改脚本不依赖云端，隐私不出设备。</p></div>
-    <div class="card glass fadeup"><span class="tag">外设</span><h3>桌面模式</h3><p>接 OTG 键鼠、连外接显示器，手机变一台小主机：窗口、拖拽，全玻璃质感。</p></div>
-    <div class="card glass fadeup"><span class="tag">个性化</span><h3>主题引擎</h3><p>液态玻璃不止一种光。自定义光晕颜色、模糊强度、反射层，把终端调成你的那一款。</p></div>
-  </div>
-</section>
-
-<section id="community" class="wrap">
-  <div class="sec-title fadeup">社区</div>
-  <p class="sec-desc fadeup">这个站点只是门面。真正聊需求、报 bug、晒玩法的地方，在 GitHub Discussions——一个账号就能来。</p>
-  <div class="card glass fadeup" style="text-align:center; padding:38px">
-    <h3 style="margin-bottom:10px">来 Discussions 找我们</h3>
-    <p>功能想怎么加、Mox 系列该往哪走，都可以在社区里说。我们也在这汇总路线图和版本动态。</p>
-    <div class="actions" style="margin-top:18px; justify-content:center">
-      <a class="btn primary" id="discLink" href="#" target="_blank" rel="noopener">进入社区 →</a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="brandf"><span class="dot" style="width:22px;height:22px;border-radius:7px"></span> Mox 系列</div>
-  <div>© 2026 Mox 系列 · 由独立开发者与 AI 协作构建</div>
-  <div>moxsh / mox-id / mox-site 开源仓库与全部构建产物，均可在 <a href="#" id="ghLink">GitHub</a> 获取</div>
+<footer class="wrap">
+  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> moxsh</div>
+  <div>© 2026 moxsh · 由独立开发者与 AI 协作构建</div>
+  <div>开源仓库与全部构建产物，均可在 <a href="#" id="ghLink">GitHub</a> 获取</div>
 </footer>
-
-<div class="modal" id="verifyModal">
-  <div class="glass mbox" style="position:relative">
-    <span class="close" onclick="closeVerify()">×</span>
-    <h3>人机验证</h3>
-    <p class="mdesc" id="mDesc">请输入下面算式的答案（最多尝试 5 次，每次刷新题目）。</p>
-    <canvas id="captchaCanvas" width="260" height="90"></canvas>
-    <input id="answer" inputmode="numeric" maxlength="6" placeholder="答案">
-    <button class="btn primary vbtn" onclick="submitVerify()">确认</button>
-    <div class="vmsg" id="vmsg"></div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* ===== 联系方式（混淆存储：验证通过才还原；明文不出现在页面源码中） ===== */
-var _K = 0x5d;
-var _QA = [110,109,105,111,100,101,109,109,110,106];
-var _MA = [39,107,107,107,107,107,107,107,107,107,107,29,108,107,110,115,62,50,48];
-function _d(a){ var s=''; for(var i=0;i<a.length;i++){ s+=String.fromCharCode(a[i]^_K); } return s; }
-
-/* ===== 鼠标光斑：液态玻璃反光 ===== */
-function bindLight(el){
-  el.addEventListener('pointermove', function(e){
-    var r = el.getBoundingClientRect();
-    el.style.setProperty('--mx', ((e.clientX-r.left)/r.width*100)+'%');
-    el.style.setProperty('--my', ((e.clientY-r.top)/r.height*100)+'%');
-  });
+/* 联系方式：混淆存储，明文不出现在页面源码中 */
+var _K=0x5d;
+var _QA=[110,109,105,111,100,101,109,109,110,106];
+var _MA=[39,107,107,107,107,107,107,107,107,107,107,29,108,107,110,115,62,50,48];
+function _d(a){var s='';for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]^_K);return s;}
+function revealContact(){
+  var c=document.getElementById('contactCards');c.classList.add('show');
+  document.getElementById('qqVal').textContent=_d(_QA);
+  document.getElementById('mailVal').textContent=_d(_MA);
+  showToast('联系方式已显示');
 }
-['header'].forEach(function(sel){ var el=document.querySelector(sel); if(el) bindLight(el); });
+/* 指针光斑 */
+function bindLight(el){el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();
+  el.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+  el.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});}
 document.querySelectorAll('.glass').forEach(bindLight);
-
-/* ===== 人机验证 ===== */
-var capAns = null, fails = 0, lockedUntil = 0;
-function openVerify(){
-  if (Date.now() < lockedUntil) { showToast('尝试次数过多，请 ' + Math.ceil((lockedUntil-Date.now())/1000) + ' 秒后再试'); return; }
-  document.getElementById('verifyModal').classList.add('open'); drawCaptcha();
-  setTimeout(function(){ document.getElementById('answer').focus(); }, 60);
-}
-function closeVerify(){ document.getElementById('verifyModal').classList.remove('open'); }
-function drawCaptcha(){
-  var a = 2 + Math.floor(Math.random()*8), b = 2 + Math.floor(Math.random()*9);
-  var mul = Math.random() < 0.5; capAns = mul ? a*b : a+b;
-  var c = document.getElementById('captchaCanvas'), x = c.getContext('2d');
-  x.clearRect(0,0,c.width,c.height);
-  var g = x.createLinearGradient(0,0,260,90); g.addColorStop(0,'#1b2140'); g.addColorStop(1,'#2a2350');
-  x.fillStyle = g; x.fillRect(0,0,260,90);
-  for (var i=0;i<5;i++){ x.strokeStyle='rgba(255,255,255,'+(0.06+Math.random()*0.10)+')';
-    x.beginPath(); x.moveTo(Math.random()*260,Math.random()*90);
-    x.bezierCurveTo(Math.random()*260,Math.random()*90,Math.random()*260,Math.random()*90,Math.random()*260,Math.random()*90); x.stroke(); }
-  var expr = mul ? (a+' × '+b+' = ?') : (a+' + '+b+' = ?');
-  var cx = 130, y = 52; x.font='bold 34px "PingFang SC",sans-serif'; x.textAlign='center'; x.textBaseline='middle';
-  for (var j=0;j<expr.length;j++){ var ch=expr[j]; x.save();
-    x.translate(cx-(expr.length*11)+j*22+(Math.random()*4-2), y+(Math.random()*8-4));
-    x.rotate((Math.random()*30-15)*Math.PI/180);
-    x.fillStyle='rgba(255,255,255,'+(0.82+Math.random()*0.18)+')'; x.fillText(ch,0,0); x.restore(); }
-  for (var k=0;k<16;k++){ x.fillStyle='rgba(255,255,255,'+(0.10+Math.random()*0.16)+')';
-    x.beginPath(); x.arc(Math.random()*260,Math.random()*90,Math.random()*2+0.6,0,Math.PI*2); x.fill(); }
-}
-function submitVerify(){
-  var msg=document.getElementById('vmsg');
-  if (Date.now()<lockedUntil) return;
-  var v=(document.getElementById('answer').value||'').trim();
-  if (v==='' || capAns===null) return;
-  if (parseInt(v,10)===capAns){ msg.className='vmsg ok'; msg.textContent='验证通过，已为你解锁联系方式。'; fails=0;
-    setTimeout(function(){ closeVerify(); unlockContact(); }, 550);
-  } else {
-    fails++;
-    if (fails>=5){ lockedUntil=Date.now()+30000; closeVerify(); showToast('尝试次数过多，已锁定 30 秒'); fails=0; }
-    else { msg.className='vmsg err'; msg.textContent='不对，再试试（剩余 '+(5-fails)+' 次）';
-      document.getElementById('answer').value=''; drawCaptcha(); }
-  }
-}
-document.getElementById('answer').addEventListener('keydown', function(e){ if (e.key==='Enter') submitVerify(); });
-function unlockContact(){
-  document.getElementById('verifyEntry').style.display='none';
-  var box=document.getElementById('contactCards'); box.style.display='flex';
-  document.getElementById('qqVal').textContent=_d(_QA); document.getElementById('mailVal').textContent=_d(_MA);
-  showToast('联系方式已解锁');
-}
-
-/* ===== 工具 ===== */
-function copyVal(id){ var t=document.getElementById(id).textContent;
-  var done=function(){ showToast('已复制：'+t); };
-  if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,function(){ fallbackCopy(t); done(); }); }
-  else { fallbackCopy(t); done(); } }
-function fallbackCopy(t){ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0';
-  document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta); }
-var toastTimer=null;
-function showToast(msg){ var t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove('show'); },2200); }
-document.getElementById('verifyModal').addEventListener('click', function(e){ if (e.target===this) closeVerify(); });
-
-/* 下载直链 / 社区直链（仓库地址 base64 分段拼接，页面源码不含明文账号名） */
-(function(){
-  var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];
-  var base=seg.map(function(x){ return atob(x); }).join('');
-  document.getElementById('dlLatest').href=base+'/releases/latest';
-  document.getElementById('discLink').href=base+'/discussions';
-  document.getElementById('ghLink').href=base;
-})();
-
-/* 滚动入场动画 */
-(function(){
-  var els=document.querySelectorAll('.fadeup');
-  if (!('IntersectionObserver' in window)){ els.forEach(function(e){ e.classList.add('in'); }); return; }
-  var io=new IntersectionObserver(function(entries){ entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } }); }, {threshold:0.12});
-  els.forEach(function(e){ io.observe(e); });
-})();
+/* 复制 */
+function copyVal(id){var t=document.getElementById(id).textContent;
+  var done=function(){showToast('已复制：'+t);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,function(){f(t);done();});
+  else{f(t);done();}}
+function f(t){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+var tt=null;function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show');},2200);}
+/* GitHub 地址 base64 分段，避免源码明文账号 */
+(function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];
+  var b=seg.map(function(x){return atob(x);}).join('');
+  document.getElementById('dlLatest').href=b+'/releases/latest';
+  document.getElementById('ghLink').href=b;})();
+/* 滚动入场 */
+(function(){var els=document.querySelectorAll('.fadeup');
+  if(!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in');});return;}
+  var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
+  els.forEach(function(e){io.observe(e);});})();
 </script>
 </body>
 </html>
