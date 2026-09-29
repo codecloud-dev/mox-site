@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>在线体验 · moxsh</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="在线体验 moxsh：交互原型，试试会话抽屉、图形化容器管理四件套与液态玻璃控制中心。">
+<meta name="color-scheme" content="dark">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  :root{
+    --text:rgba(237,240,252,.92); --dim:rgba(237,240,252,.58); --faint:rgba(237,240,252,.34);
+    --stroke:rgba(255,255,255,.10); --glass:rgba(255,255,255,.05);
+    --a:#5eead4; --b:#818cf8; --accent:linear-gradient(120deg,#5eead4,#818cf8);
+  }
+  html{scroll-behavior:smooth}
+  body{
+    min-height:100vh; color:var(--text); overflow-x:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","HarmonyOS Sans SC","Noto Sans SC",sans-serif;
+    background:
+      radial-gradient(60rem 40rem at 15% -10%, rgba(94,234,212,.14), transparent 55%),
+      radial-gradient(52rem 40rem at 110% 8%, rgba(129,140,248,.16), transparent 55%),
+      #06070d;
+  }
+  a{color:inherit;text-decoration:none}
+  .glass{background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);}
+  nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--stroke);background:rgba(6,7,13,.6);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
+  nav .mark{width:22px;height:22px;border-radius:7px;background:var(--accent);box-shadow:0 0 22px rgba(129,140,248,.5)}
+  nav b{font-size:16px;font-weight:700}
+  nav .back{margin-left:auto;font-size:14px;color:var(--dim)}
+  nav .back:hover{color:var(--text)}
+  header{max-width:1080px;margin:0 auto;padding:52px 22px 10px;text-align:center}
+  header .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);border:1px solid var(--stroke);border-radius:999px;padding:6px 14px;background:var(--glass)}
+  header .dot{width:7px;height:7px;border-radius:50%;background:var(--a);box-shadow:0 0 12px var(--a)}
+  header h1{font-size:clamp(28px,5vw,44px);font-weight:800;margin:18px 0 12px;letter-spacing:-.5px}
+  header p{max-width:640px;margin:0 auto;color:var(--dim);font-size:15px;line-height:1.7}
+  main{max-width:1080px;margin:0 auto;padding:34px 22px 70px;display:flex;gap:44px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+  .stage{position:relative;flex:0 0 auto}
+  .stage::before{content:"";position:absolute;inset:8% -8% -6% -8%;background:radial-gradient(closest-side,rgba(129,140,248,.28),transparent 70%);filter:blur(28px);z-index:-1}
+  .frame{width:430px;max-width:92vw;border-radius:56px;overflow:hidden;border:1px solid var(--stroke);box-shadow:0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset;position:relative}
+  .frame iframe{display:block;width:430px;height:880px;border:0;transform-origin:top left}
+  aside{flex:1 1 300px;min-width:280px;max-width:380px;display:flex;flex-direction:column;gap:14px}
+  .card{border-radius:18px;padding:18px 18px;background:var(--glass);border:1px solid var(--stroke)}
+  .card h3{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .card h3 .k{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:var(--accent);color:#08131a;font-size:13px;font-weight:800}
+  .card ul{margin:0;padding-left:18px;color:var(--dim);font-size:13.5px;line-height:1.85}
+  .card li b{color:var(--text)}
+  .note{font-size:12.5px;color:var(--faint);line-height:1.7;text-align:center;margin-top:6px}
+  footer{border-top:1px solid var(--stroke);padding:26px 22px;text-align:center;color:var(--faint);font-size:13px}
+  @media (max-width:820px){ aside{max-width:none} }
+</style>
+</head>
+<body>
+<nav class="glass">
+  <span class="mark"></span><b>moxsh</b>
+  <a class="back" href="index.html">← 返回官网</a>
+</nav>
+
+<header>
+  <span class="eyebrow"><span class="dot"></span>交互原型 · 非真机</span>
+  <h1>在线体验 moxsh</h1>
+  <p>这是 moxsh 的<strong>交互原型</strong>，跑在浏览器里的可视化模拟。下面这台「手机」可以直接点、可以直接拖——会话抽屉、图形化容器管理、控制中心都能玩。</p>
+</header>
+
+<main>
+  <div class="stage">
+    <div class="frame" id="frame">
+      <iframe id="proto" src="prototype.html" title="moxsh 交互原型" loading="lazy"></iframe>
+    </div>
+  </div>
+
+  <aside>
+    <div class="card">
+      <h3><span class="k">1</span>会话抽屉（Termux 式）</h3>
+      <ul>
+        <li>点终端左上角 <b>☰</b> 打开会话列表</li>
+        <li>环境色点：<b>蓝=容器 / 绿=构建 / 灰=本地</b></li>
+        <li>点切换会话，<b>长按改名</b>，退出码非 0 显示红删除线</li>
+        <li>底部「＋ 新建会话」</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="k">2</span>针对小白 · 图形化容器管理</h3>
+      <ul>
+        <li>底部「分类」→ 顶部<b>零命令行专区</b></li>
+        <li>发行版管理器：一键装 Ubuntu / Debian / Kali / Alpine</li>
+        <li>图形包管理器：搜索、分类、装卸、安装队列</li>
+        <li>资源监控：CPU / 内存 / 磁盘 + 一键杀进程</li>
+        <li>新手引导：4 步从零上手</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="k">3</span>液态玻璃 · 控制中心</h3>
+      <ul>
+        <li>点右侧<b>音量键</b>或按 <b>V</b> 呼出控制中心（跟手）</li>
+        <li>按 <b>U</b> 唤出 AI 助手；<b>1 / 2 / 3</b> 切底部三页</li>
+        <li>设置里可调<b>整体玻璃度</b></li>
+      </ul>
+    </div>
+    <p class="note">本页为交互模拟原型，用于体验交互与视觉，功能以正式版本为准。</p>
+  </aside>
+</main>
+
+<footer>moxsh · 掌心的液态玻璃终端 · <a href="index.html">返回官网</a></footer>
+
+<script>
+  // 自适应缩放：窄屏时按比例缩小原型，保持 430×880 画布比例
+  function fit(){
+    var frame=document.getElementById('frame');
+    var iframe=document.getElementById('proto');
+    var w=frame.clientWidth;            // 实际可用宽度（受 max-width:92vw 限制）
+    var s=Math.min(1, w/430);
+    iframe.style.transform='scale('+s+')';
+    frame.style.height=(880*s)+'px';
+  }
+  window.addEventListener('resize',fit);
+  window.addEventListener('load',fit);
+  fit();
+</script>
+</body>
+</html>

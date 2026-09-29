@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>moxsh · 全玻璃图形化预览（针对小白 · 图形化容器管理）</title>
+<style>
+  /* ===== 主题变量（整个 App 都是液态玻璃） ===== */
+  :root{
+    --bg:#eef0f5; --bg2:#e4e7ef;
+    --fg:#0b0d12; --fg2:#3a3f4a; --muted:#8a90a0;
+    --accent:#0a84ff; --accent2:#30d158; --warn:#ff453a;
+    --mono:"SF Mono","SFMono-Regular","JetBrains Mono","Menlo","DejaVu Sans Mono",monospace;
+    --sans:"SF Pro SC","SF Pro Text","PingFang SC","HanHei SC","Helvetica Neue",Helvetica,Arial,sans-serif;
+    /* 玻璃系统：浅色 */
+    --gr:255,255,255; --ga:.62; --gb:rgba(255,255,255,.7);
+    --gsh:0 14px 40px rgba(20,30,60,.16);
+    --gspec:inset 0 1px 1px rgba(255,255,255,.9), inset 0 -1px 1px rgba(255,255,255,.25), inset 1px 0 1px rgba(255,255,255,.4), inset -1px 0 1px rgba(255,255,255,.2);
+    --sheen:.5;
+    --tile:rgba(120,120,140,.14); --tile-on:rgba(10,132,255,.18);
+    --term-fg:#14181f; --term-cmd:#0a84ff; --term-dim:#8a90a0; --term-ok:#1f9d55;
+  }
+  html[data-theme="dark"]{
+    --bg:#15171c; --bg2:#0e0f13;
+    --fg:#f2f3f7; --fg2:#d6d9e2; --muted:#9a9fae;
+    --accent:#4aa3ff; --accent2:#41d97a; --warn:#ff6a5e;
+    --gr:40,42,50; --ga:.60; --gb:rgba(255,255,255,.16);
+    --gsh:0 16px 46px rgba(0,0,0,.55);
+    --gspec:inset 0 1px 1px rgba(255,255,255,.22), inset 0 -1px 1px rgba(255,255,255,.06);
+    --sheen:.32;
+    --tile:rgba(140,140,160,.18); --tile-on:rgba(74,163,255,.34);
+    --term-fg:#eef1f7; --term-cmd:#4aa3ff; --term-dim:#9a9fae; --term-ok:#41d97a;
+  }
+
+  *{box-sizing:border-box; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:var(--sans); background:
+      radial-gradient(50rem 36rem at 18% -8%, rgba(10,132,255,.10), transparent 55%),
+      radial-gradient(44rem 34rem at 108% 14%, rgba(48,209,88,.08), transparent 55%),
+      var(--bg2);
+    color:var(--fg);
+    display:flex; align-items:center; justify-content:center; gap:38px; flex-wrap:wrap;
+    padding:34px; user-select:none;
+  }
+
+  /* ===== 玻璃系统（核心：整个 App 都是液态玻璃） ===== */
+  .glass{
+    position:relative; overflow:hidden;
+    background:rgba(var(--gr), var(--ga));
+    backdrop-filter:blur(26px) saturate(190%) brightness(1.05);
+    -webkit-backdrop-filter:blur(26px) saturate(190%) brightness(1.05);
+    border:1px solid var(--gb);
+    box-shadow:var(--gsh), var(--gspec);
+  }
+  .glass::after{ /* 135° 斜向镜面光泽 */
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:linear-gradient(135deg, rgba(255,255,255,.5), rgba(255,255,255,0) 42%);
+    mix-blend-mode:screen; opacity:var(--sheen);
+  }
+
+  /* ===== 手机外壳 ===== */
+  .phone{position:relative; width:390px; height:844px; border-radius:56px; background:var(--bg);
+    overflow:hidden; box-shadow:0 1px 0 rgba(255,255,255,.6) inset, 0 34px 80px rgba(0,0,0,.3), 0 2px 10px rgba(0,0,0,.18);
+    border:.5px solid rgba(120,120,140,.4);}
+  .screen{position:relative; width:100%; height:100%; border-radius:56px; overflow:hidden; background:var(--bg);}
+  .island{position:absolute; top:11px; left:50%; transform:translateX(-50%); width:122px; height:35px; background:#000; border-radius:20px; z-index:120;}
+  .statusbar{position:absolute; top:0; left:0; right:0; height:54px; z-index:110; display:flex; align-items:center; justify-content:space-between; padding:18px 30px 0; font-size:15px; font-weight:600; color:var(--fg); pointer-events:none;}
+  .statusbar .r{display:flex; gap:6px; align-items:center; font-size:13px;}
+  .statusbar svg{width:17px; height:13px; fill:var(--fg);}
+
+  /* 侧边实体键（模拟音量+ → 开控制中心） */
+  .key{position:absolute; z-index:130; right:-4px; width:5px; border-radius:3px; background:#c8ccd6; box-shadow:0 1px 2px rgba(0,0,0,.3); cursor:pointer;}
+  .key.vol{top:172px; height:78px;}
+  .key.pw{top:230px; height:46px; left:-4px; right:auto;}
+
+  /* ===== 视图 ===== */
+  .view{position:absolute; inset:0; display:none; flex-direction:column; padding:60px 14px 100px; z-index:20;}
+  .view.on{display:flex;}
+  /* 分类 / 设置页整体滚动，修复「更多分类」与卡片重叠 */
+  #v-categories,#v-settings{overflow-y:auto;}
+  #v-categories::-webkit-scrollbar,#v-settings::-webkit-scrollbar{width:0;}
+  #v-categories .search,#v-categories .beginner,#v-categories .more,#v-categories .v-head{flex:0 0 auto;}
+  .v-head{padding:2px 18px 12px; display:flex; align-items:baseline; justify-content:space-between;}
+  .v-head h1{font-size:30px; font-weight:700; margin:0; letter-spacing:-.4px;}
+  .v-head .sub{font-size:12.5px; color:var(--muted);}
+  .sub.back{color:var(--accent); cursor:pointer; font-weight:600;}
+
+  /* ===== 终端（全玻璃 · 单会话） ===== */
+  .term{margin:4px 4px 0; flex:1; border-radius:22px; display:flex; flex-direction:column; overflow:hidden; touch-action:none;}
+  .term-bar{display:flex; align-items:center; gap:8px; padding:12px 15px; border-bottom:1px solid rgba(120,120,140,.22);}
+  .tl{display:flex; gap:7px;} .tl i{width:11px; height:11px; border-radius:50%;}
+  .tl .r{background:#ff5f57;} .tl .y{background:#febc2e;} .tl .g{background:#28c840;}
+  .term-title{margin-left:6px; font-size:12.5px; color:var(--fg2); font-weight:600;}
+  .term-body{flex:1; overflow-y:auto; padding:13px 15px; font-family:var(--mono); font-size:12.5px; line-height:1.62; color:var(--term-fg);}
+  .term-body::-webkit-scrollbar{width:0;}
+  .ln{white-space:pre-wrap; word-break:break-all;}
+  .ln.cmd{color:var(--term-cmd);} .ln.dim{color:var(--term-dim);} .ln.ok{color:var(--term-ok);}
+  .term-in{display:flex; align-items:center; gap:7px; padding:11px 15px; border-top:1px solid rgba(120,120,140,.22); font-family:var(--mono); font-size:12.5px;}
+  .term-in .ps{color:var(--accent); white-space:nowrap;}
+  .term-in input{flex:1; border:none; outline:none; background:transparent; color:var(--term-fg); font-family:var(--mono); font-size:12.5px;}
+  /* 额外功能键（图形化） */
+  .extra{display:flex; gap:7px; padding:9px 6px 4px; flex-wrap:wrap;}
+  .keycap{flex:1; min-width:46px; text-align:center; padding:9px 0; border-radius:12px; font-size:12.5px; font-weight:600; color:var(--fg); background:var(--tile); border:1px solid var(--gb); cursor:pointer;}
+  .keycap:active{transform:scale(.94);}
+
+  /* ===== 分类（玻璃卡片） ===== */
+  .search{margin:2px 6px 10px; display:flex; align-items:center; gap:8px; border-radius:14px; padding:10px 14px; color:var(--muted);}
+  .search svg{width:15px; height:15px; fill:var(--muted); flex:0 0 auto;}
+  .search input{flex:1; border:none; background:transparent; outline:none; font-size:15px; color:var(--fg); font-family:inherit;}
+  .cat-grid{flex:0 0 auto; display:grid; grid-template-columns:1fr 1fr; gap:11px; padding:0 6px 8px;}
+  .cat{display:flex; align-items:center; gap:11px; border-radius:17px; padding:14px; cursor:pointer; transition:transform .12s, border-color .12s;}
+  .cat:active{transform:scale(.97);}
+  .cat .ic{width:42px; height:42px; flex:0 0 auto; border-radius:12px; display:grid; place-items:center; background:var(--tile); color:var(--accent);}
+  .cat .ic svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.7;}
+  .cat .tx b{display:block; font-size:15px; font-weight:600;}
+  .cat .tx span{font-size:11.5px; color:var(--muted);}
+  .cat.feat{border-color:var(--accent);} .cat.feat .ic{background:var(--accent); color:#fff;}
+
+  /* ===== 会话抽屉（Termux 式 · 完整版：环境色点 / 长按改名 / 退出码红删除线） ===== */
+  #sessBtn{display:grid; place-items:center; width:26px; height:26px; flex:0 0 auto; border-radius:8px; background:var(--tile); color:var(--fg2); cursor:pointer;}
+  #sessBtn svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2;}
+  #sessBtn:active{transform:scale(.92);}
+  #sessCount{font-size:11px; color:var(--muted); margin-left:auto;}
+  .scrim{position:absolute; inset:0; z-index:96; background:rgba(10,12,20,.34); opacity:0; pointer-events:none; transition:opacity .26s;}
+  .scrim.on{opacity:1; pointer-events:auto;}
+  .drawer{position:absolute; top:0; left:0; bottom:0; width:290px; z-index:97; transform:translateX(-102%); transition:transform .32s cubic-bezier(.34,1.16,.5,1); display:flex; flex-direction:column; padding:58px 14px 22px; gap:12px; background:rgba(var(--gr), var(--ga)); backdrop-filter:blur(28px) saturate(190%); -webkit-backdrop-filter:blur(28px) saturate(190%); border-right:1px solid var(--gb); box-shadow:24px 0 60px rgba(10,20,40,.18);}
+  .drawer.on{transform:translateX(0);}
+  .dw-head{display:flex; align-items:baseline; gap:8px; padding:0 6px 4px;}
+  .dw-head b{font-size:20px; font-weight:800; letter-spacing:-.3px;}
+  .dw-head span{margin-left:auto; font-size:11.5px; color:var(--muted);}
+  .sess-list{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:9px;}
+  .sess-list::-webkit-scrollbar{width:0;}
+  .sess-item{display:flex; align-items:center; gap:11px; padding:12px 13px; border-radius:15px; background:rgba(var(--gr),.55); border:1px solid var(--gb); cursor:pointer; transition:transform .12s, border-color .12s;}
+  .sess-item:active{transform:scale(.98);}
+  .sess-item.on{border-color:var(--accent); background:var(--tile-on);}
+  .sess-dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto;}
+  .sess-meta{flex:1; min-width:0;}
+  .sess-meta b{display:block; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sess-meta span{display:block; font-size:11px; color:var(--muted); font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sess-tag{font-size:10px; padding:3px 8px; border-radius:999px; background:var(--tile); color:var(--muted); flex:0 0 auto;}
+  .sess-item.dead .sess-meta b{text-decoration:line-through; color:var(--warn);}
+  .sess-kill{font-size:11px; color:var(--warn); padding:4px 9px; border-radius:8px; background:rgba(255,69,58,.12); cursor:pointer; flex:0 0 auto;}
+  .sess-new{margin:2px 0 0; padding:13px; border-radius:14px; text-align:center; font-weight:700; font-size:14px; color:#fff; background:var(--accent); cursor:pointer; border:1px solid transparent;}
+  .sess-new:active{transform:scale(.98);}
+
+  /* ===== 小白专区 / 图形化容器管理（D13 四件套） ===== */
+  .field{width:100%; box-sizing:border-box; padding:11px 13px; border-radius:12px; border:1px solid var(--gb); background:rgba(255,255,255,.08); color:var(--fg); font-size:14px; outline:none; font-family:inherit;}
+  .beginner{margin:2px 6px 12px; border-radius:18px; padding:13px 13px 14px; background:linear-gradient(160deg, rgba(10,132,255,.12), rgba(48,209,88,.08)); border:1px solid var(--gb);}
+  .beginner .bh{display:flex; align-items:center; gap:7px; margin:2px 4px 11px;}
+  .beginner .bh b{font-size:14.5px; font-weight:700;}
+  .beginner .bh .pill{margin-left:auto; font-size:10.5px; color:#fff; background:var(--accent); padding:3px 9px; border-radius:999px;}
+  .beginner .hint{font-size:11.5px; color:var(--muted); margin:0 4px 11px; line-height:1.5;}
+  .bgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .bcard{border-radius:16px; padding:13px; cursor:pointer; transition:transform .12s; display:flex; flex-direction:column; gap:7px; background:rgba(var(--gr), .9); border:1px solid var(--gb); box-shadow:var(--gsh);}
+  .bcard:active{transform:scale(.97);}
+  .bcard .bic{width:38px; height:38px; border-radius:11px; display:grid; place-items:center; background:var(--accent); color:#fff;}
+  .bcard .bic svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7;}
+  .bcard b{font-size:14.5px; font-weight:700;}
+  .bcard span{font-size:11.5px; color:var(--muted); line-height:1.45;}
+
+  .more{font-size:12.5px; color:var(--muted); padding:4px 8px 8px; font-weight:600;}
+
+  /* ===== 发行版管理器 ===== */
+  .dlist{margin:0 6px; display:flex; flex-direction:column; gap:11px; overflow-y:auto; flex:1; padding-bottom:8px;}
+  .dcard{border-radius:18px; padding:14px;}
+  .drow{display:flex; align-items:center; gap:12px;}
+  .dcolor{width:42px; height:42px; border-radius:12px; flex:0 0 auto; display:grid; place-items:center; color:#fff; font-weight:800; font-size:20px;}
+  .dinfo{flex:1; min-width:0;}
+  .dinfo b{display:block; font-size:15.5px; font-weight:700;}
+  .dinfo span{font-size:12px; color:var(--muted);}
+  .dbadge{font-size:11px; padding:4px 9px; border-radius:999px; background:var(--tile); color:var(--muted);}
+  .dbadge.on{background:rgba(48,209,88,.18); color:var(--accent2);}
+  .dbar{height:6px; border-radius:4px; background:var(--tile); margin:12px 0 10px; overflow:hidden;}
+  .dbar > i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:4px; transition:width .25s;}
+  .dact{display:flex; gap:8px; flex-wrap:wrap;}
+  .btn{flex:1; min-width:84px; text-align:center; padding:10px 0; border-radius:12px; font-size:13.5px; font-weight:600; background:var(--tile); color:var(--fg); border:1px solid var(--gb); cursor:pointer;}
+  .btn:active{transform:scale(.97);}
+  .btn.fill{background:var(--accent); color:#fff; border-color:transparent;}
+  .btn.danger{background:rgba(255,69,58,.14); color:var(--warn); border-color:transparent;}
+  /* 自定义 rootfs 卡 */
+  .custom-card{margin:0 6px 12px; border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:9px;}
+  .custom-card b{font-size:14.5px;}
+  .custom-card span{font-size:11.5px; color:var(--muted); line-height:1.5;}
+
+  /* ===== 图形包管理器 ===== */
+  .seg2{display:flex; gap:8px; margin:0 6px 8px;}
+  .seg2 > div{flex:1; text-align:center; padding:9px 0; border-radius:12px; font-size:13px; font-weight:600; background:var(--tile); color:var(--fg2); border:1px solid var(--gb); cursor:pointer;}
+  .seg2 > div.on{background:var(--accent); color:#fff; border-color:transparent;}
+  .chips{display:flex; gap:7px; margin:0 6px 10px; overflow-x:auto;}
+  .chips::-webkit-scrollbar{height:0;}
+  .chip{flex:0 0 auto; padding:7px 13px; border-radius:999px; font-size:12.5px; font-weight:600; background:var(--tile); color:var(--fg2); border:1px solid var(--gb); cursor:pointer;}
+  .chip.on{background:var(--accent); color:#fff; border-color:transparent;}
+  .plist{margin:0 6px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-bottom:8px;}
+  .prow{border-radius:16px; padding:12px 13px; display:flex; align-items:center; gap:10px;}
+  .pinfo{flex:1; min-width:0;}
+  .pinfo b{font-size:14.5px; font-weight:700;}
+  .pinfo b em{font-style:normal; color:var(--muted); font-weight:500; font-size:12.5px; margin-left:4px;}
+  .pinfo span{display:block; font-size:11.5px; color:var(--muted); margin-top:2px;}
+  .pqueue{margin:0 6px; border-radius:16px; padding:12px 13px; display:none; flex-direction:column; gap:7px;}
+  .pqueue b{font-size:12.5px; color:var(--muted);}
+  .pq{display:flex; justify-content:space-between; font-size:12.5px; padding:6px 0; border-top:1px solid var(--gb);}
+  .pq .x{color:var(--warn); cursor:pointer;}
+
+  /* ===== 资源监控 ===== */
+  .gauges{margin:0 6px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .gcard{border-radius:16px; padding:13px 12px; display:flex; flex-direction:column; gap:6px;}
+  .gcard .gt{display:flex; align-items:baseline; justify-content:space-between;}
+  .gcard .gt b{font-size:13px; font-weight:700;}
+  .gcard .gt span{font-size:17px; font-weight:800; color:var(--accent);}
+  .gcard .gsub{font-size:10px; color:var(--muted); line-height:1.4;}
+  .spark{display:flex; align-items:flex-end; gap:2px; height:30px; margin-top:2px;}
+  .spark > i{flex:1; background:linear-gradient(180deg,var(--accent),rgba(10,132,255,.35)); border-radius:2px 2px 0 0; min-height:3px;}
+  .plist2{margin:12px 6px 0; flex:1; overflow-y:auto;}
+  .plist2 .ttl{font-size:14px; font-weight:700; margin-bottom:6px;}
+  .plist2 .note{font-size:10.5px; color:var(--muted); margin-bottom:8px; line-height:1.5;}
+  .pitem{display:flex; align-items:center; gap:9px; padding:11px 12px; border-radius:13px; background:var(--tile); margin-bottom:7px;}
+  .pitem .pn{font-size:13.5px; font-weight:700; min-width:64px;}
+  .pitem .pm{font-size:11px; color:var(--muted); font-family:var(--mono);}
+  .pitem .k{margin-left:auto; font-size:11.5px; color:var(--warn); padding:5px 10px; border-radius:9px; background:rgba(255,69,58,.12); cursor:pointer;}
+
+  /* ===== 新手引导 wizard ===== */
+  .wizard{position:absolute; inset:0; z-index:150; background:rgba(10,12,20,.55); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:none; flex-direction:column; padding:54px 18px 110px; gap:14px;}
+  .wizard.on{display:flex;}
+  .wdots{display:flex; gap:7px; justify-content:center;}
+  .wdots i{width:8px; height:8px; border-radius:50%; background:var(--tile);}
+  .wdots i.on{background:var(--accent); width:22px; border-radius:5px;}
+  .wstep{flex:1; border-radius:22px; padding:22px 18px; display:flex; flex-direction:column; gap:12px; overflow-y:auto;}
+  .wstep h2{margin:0; font-size:23px; font-weight:800; letter-spacing:-.3px;}
+  .wstep p{margin:0; font-size:14px; line-height:1.6; color:var(--fg2);}
+  .opt{display:flex; align-items:center; justify-content:space-between; padding:14px 15px; border-radius:14px; background:var(--tile); border:1.5px solid transparent; cursor:pointer;}
+  .opt.on{border-color:var(--accent); background:var(--tile-on);}
+  .opt b{font-size:15px; font-weight:700;}
+  .opt span{font-size:11.5px; color:var(--accent);}
+  .wbtns{display:flex; gap:10px;}
+  .wbtns .btn{flex:1;}
+
+  /* ===== 设置 ===== */
+  .group{margin:0 6px 12px; border-radius:18px; padding:6px 14px;}
+  .row{display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--gb);}
+  .row:last-child{border-bottom:none;}
+  .row .ic{width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:var(--tile); color:var(--accent); flex:0 0 auto;}
+  .row .ic svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7;}
+  .row .lab{flex:1; font-size:14.5px; font-weight:600;}
+  .row .val{font-size:12.5px; color:var(--muted);}
+  .row .chev{color:var(--muted); font-size:18px;}
+  .sw{width:46px; height:28px; border-radius:999px; background:var(--tile); position:relative; cursor:pointer; transition:background .2s; flex:0 0 auto;}
+  .sw::after{content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s;}
+  .sw.on{background:var(--accent2);}
+  .sw.on::after{left:21px;}
+
+  /* ===== 控制中心 ===== */
+  .cc{position:absolute; inset:0; z-index:95; transform:translateY(-100%); transition:transform .42s cubic-bezier(.34,1.25,.5,1); display:flex; flex-direction:column; padding:58px 16px 26px; gap:12px;}
+  .cc.on{transform:translateY(0);}
+  .cc-grab{display:flex; align-items:center; justify-content:center; padding:4px 0 6px;}
+  .cc-grab i{width:38px; height:5px; border-radius:3px; background:var(--tile);}
+  .cc-blur{flex:1; border-radius:26px; padding:16px; display:flex; flex-direction:column; gap:14px; overflow-y:auto;}
+  .cc-top{display:flex; align-items:center; gap:10px;}
+  .cc-ring{width:62px; height:62px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center; background:conic-gradient(var(--accent) 223deg, var(--tile) 0);}
+  .cc-ring .cc-ic{width:50px; height:50px; border-radius:50%; background:rgba(var(--gr),.9); display:grid; place-items:center; color:var(--fg);}
+  .cc-ring .cc-ic svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.7;}
+  .cc-top .cc-meta b{font-size:16px; font-weight:700; display:block;}
+  .cc-top .cc-meta span{font-size:12px; color:var(--muted);}
+  .cc-tiles{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;}
+  .cc-tile{border-radius:16px; padding:12px 6px; display:flex; flex-direction:column; align-items:center; gap:7px; background:var(--tile); color:var(--fg); cursor:pointer;}
+  .cc-tile svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.7;}
+  .cc-tile span{font-size:11px; color:var(--muted);}
+  .cc-tile.on{color:var(--accent);}
+  .cc-widget{border-radius:18px; padding:13px;}
+  .cc-wlab{font-size:12px; color:var(--muted); margin-bottom:9px;}
+  .wbtns{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:9px;}
+  .wbtn{border-radius:13px; padding:11px 4px; display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--tile); color:var(--fg); cursor:pointer; font-size:11px;}
+  .wbtn svg{width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.7;}
+
+  /* ===== AI 面板（上滑跟手） ===== */
+  .aip{position:absolute; inset:0; z-index:100; transform:translateY(100%); transition:transform .42s cubic-bezier(.34,1.2,.5,1); display:flex; flex-direction:column;}
+  .aip.on{transform:translateY(0);}
+  .aip-grab{height:30px; display:grid; place-items:center; flex:0 0 auto;}
+  .aip-grab i{width:38px; height:5px; border-radius:3px; background:var(--tile);}
+  .aip-body{flex:1; display:flex; flex-direction:column; border-radius:26px 26px 0 0; padding:6px 16px 16px;}
+  .msgs{flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:14px 4px;}
+  .msg{max-width:82%; padding:11px 14px; border-radius:16px; font-size:13.5px; line-height:1.5;}
+  .msg.ai{align-self:flex-start; background:var(--tile); border-bottom-left-radius:5px;}
+  .msg.me{align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:5px;}
+  .ai-in{display:flex; align-items:center; gap:9px; padding:11px; border-radius:18px; background:var(--tile);}
+  .ai-in input{flex:1; border:none; background:transparent; outline:none; font-size:14px; color:var(--fg); font-family:inherit;}
+  .ai-send{width:38px; height:38px; flex:0 0 auto; border-radius:50%; background:var(--accent); color:#fff; display:grid; place-items:center; cursor:pointer;}
+  .ai-send svg{width:18px; height:18px; fill:#fff;}
+
+  /* ===== AI 配置屏 ===== */
+  .aip-cfg{padding:0 16px;}
+  .aip-cfg .field{margin-bottom:12px;}
+  .aip-cfg label{display:block; font-size:12px; color:var(--muted); margin:0 4px 6px;}
+  .aip-cfg select{appearance:none; cursor:pointer;}
+  .save-btn{margin:6px 0 0; padding:13px; border-radius:14px; background:var(--accent); color:#fff; text-align:center; font-weight:700; cursor:pointer; border:1px solid transparent;}
+
+  /* ===== Toast ===== */
+  .toast{position:absolute; bottom:118px; left:50%; transform:translateX(-50%) translateY(20px); z-index:200; background:rgba(20,22,30,.92); color:#fff; font-size:13px; padding:11px 18px; border-radius:14px; opacity:0; transition:.25s; pointer-events:none; max-width:80%; text-align:center;}
+  .toast.on{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ===== 底部标签栏 ===== */
+  .tabbar{position:absolute; bottom:0; left:0; right:0; height:84px; z-index:60; display:flex; padding:8px 30px 26px; gap:6px; background:rgba(var(--gr),.72); backdrop-filter:blur(26px) saturate(180%); -webkit-backdrop-filter:blur(26px) saturate(180%); border-top:1px solid var(--gb);}
+  .tab{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--muted); font-size:11px; font-weight:600; cursor:pointer; border-radius:14px;}
+  .tab svg{width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.8;}
+  .tab.active{color:var(--accent);}
+  .tab .badge{position:absolute; top:6px; right:calc(50% - 22px); min-width:16px; height:16px; padding:0 4px; border-radius:9px; background:var(--warn); color:#fff; font-size:10px; display:grid; place-items:center;}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="screen" id="screen">
+      <div class="island"></div>
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="r"><svg viewBox="0 0 24 24"><path d="M2 17h2v-5H2zM6 17h2V9H6zM10 17h2V5h-2zM14 17h2v-8h-2zM18 17h2v-3h-2z"/></svg><svg viewBox="0 0 24 24"><path d="M12 4C7 4 2.7 6 0 9l12 13L24 9c-2.7-3-7-5-12-5z"/></svg><svg viewBox="0 0 24 24"><path d="M16 8a4 4 0 0 0-8 0M4 20h16M2 16h3v4H2zM19 16h3v4h-3z"/></svg></span>
+      </div>
+
+      <!-- 侧边实体键 -->
+      <div class="key vol" id="keyVol" title="音量+ → 控制中心"></div>
+      <div class="key pw" title="电源"></div>
+
+      <!-- 终端 -->
+      <div class="view on" id="v-terminal">
+        <div class="term glass" id="term">
+          <div class="term-bar">
+            <div class="tl"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+            <div id="sessBtn" title="会话：点击切换 / 长按改名"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+            <span class="term-title" id="term-title">mox · 本地终端</span>
+            <span id="sessCount"></span>
+          </div>
+          <div class="term-body" id="term-out"></div>
+          <div class="term-in"><span class="ps" id="term-ps">mox $</span><input id="term-input" value="" placeholder="输入命令…" /></div>
+          <div class="extra glass">
+            <div class="keycap">Tab</div><div class="keycap">Ctrl</div><div class="keycap">↑</div><div class="keycap">↓</div><div class="keycap">清屏</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 会话抽屉（Termux 式） -->
+      <div class="scrim" id="scrim"></div>
+      <div class="drawer" id="sessDrawer">
+        <div class="dw-head"><b>会话</b><span id="dwHint">点切换 · 长按改名</span></div>
+        <div class="sess-list" id="sessList"></div>
+        <div class="sess-new" id="sessNew">＋ 新建会话</div>
+      </div>
+
+      <!-- 分类 -->
+      <div class="view" id="v-categories">
+        <div class="v-head"><h1>分类</h1><span class="sub">什么都有</span></div>
+        <div class="search glass"><svg viewBox="0 0 24 24"><path d="M10 4a6 6 0 1 0 3.8 10.6l4.3 4.3 1.4-1.4-4.3-4.3A6 6 0 0 0 10 4m0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8"/></svg><input placeholder="搜索分类…" /></div>
+
+        <!-- 针对小白 · 图形化容器管理（D13 四件套） -->
+        <div class="beginner">
+          <div class="bh"><b>针对小白 · 图形化容器管理</b><span class="pill">零命令行</span></div>
+          <p class="hint">不用敲命令也能装 Linux、管容器、看资源。下面四块帮你从零上手，全程点一点就行。</p>
+          <div class="bgrid">
+            <div class="bcard" data-go="v-distro"><div class="bic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></div><b>发行版管理器</b><span>一键装 Ubuntu / Debian / Kali / Alpine</span></div>
+            <div class="bcard" data-go="v-pkgs"><div class="bic"><svg viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16l8 4 8-4"/></svg></div><b>图形包管理器</b><span>搜索 / 分类，一键装卸软件</span></div>
+            <div class="bcard" data-go="v-monitor"><div class="bic"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16l3-4 3 2 4-7"/></svg></div><b>资源监控</b><span>CPU / 内存 / 磁盘，一键杀进程</span></div>
+            <div class="bcard" data-go="wizard"><div class="bic"><svg viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></svg></div><b>新手引导</b><span>4 步带你装好一切</span></div>
+          </div>
+        </div>
+
+        <div class="more">更多分类</div>
+        <div class="cat-grid" id="catGrid"></div>
+      </div>
+
+      <!-- 设置 -->
+      <div class="view" id="v-settings">
+        <div class="v-head"><h1>设置</h1><span class="sub">moxsh</span></div>
+        <div class="group glass">
+          <div class="row" id="goAiconfig"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 1 4 4 4 4 0 0 1-2 3.5A4 4 0 0 1 12 18a4 4 0 0 1-2-7.5A4 4 0 0 1 12 3"/></svg></div><span class="lab">AI 助手</span><span class="val">已配置 · 智谱</span><span class="chev">›</span></div>
+          <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/></svg></div><span class="lab">App 整体玻璃度</span><span class="v" id="gaVal">62%</span></div>
+          <div class="row" style="flex-direction:column;align-items:stretch;gap:10px"><input type="range" id="gaSlider" min="20" max="90" value="62"/></div>
+        </div>
+        <div class="group glass">
+          <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div><span class="lab">自动切换浅/深色</span><div class="sw on" data-sw></div></div>
+          <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/></svg></div><span class="lab">跟随系统外观</span><div class="sw" data-sw></div></div>
+          <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3z"/></svg></div><span class="lab">终端渲染层</span><span class="val">自研</span></div>
+        </div>
+        <div class="group glass">
+          <div class="row"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/></svg></div><span class="lab">关于 moxsh</span><span class="val">v0.9</span></div>
+        </div>
+      </div>
+
+      <!-- 发行版管理器 -->
+      <div class="view" id="v-distro">
+        <div class="v-head"><h1>发行版管理器</h1><span class="sub back" data-back="v-categories">← 返回</span></div>
+        <div class="dlist" id="dlist"></div>
+        <div class="custom-card glass">
+          <b>自定义 rootfs：从 tar 安装</b>
+          <span>填 rootfs tar 包直链（≤256MB），支持任意 Linux 用户态根文件系统，适合导入已配置好的环境。</span>
+          <input class="field" placeholder="https://…/rootfs.tar.gz" />
+          <div class="btn fill">安装自定义 rootfs</div>
+        </div>
+      </div>
+
+      <!-- 图形包管理器 -->
+      <div class="view" id="v-pkgs">
+        <div class="v-head"><h1>包管理器</h1><span class="sub back" data-back="v-categories">← 返回</span></div>
+        <div class="seg2">
+          <div data-src="0" class="on">moxsh 源</div>
+          <div data-src="1">apt 源（发行版内）</div>
+        </div>
+        <div class="search glass" style="margin:0 6px 8px"><svg viewBox="0 0 24 24"><path d="M10 4a6 6 0 1 0 3.8 10.6l4.3 4.3 1.4-1.4-4.3-4.3A6 6 0 0 0 10 4m0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8"/></svg><input id="pkgKw" placeholder="搜索软件包…" /></div>
+        <div class="chips">
+          <div class="chip on" data-cat="-1">全部</div>
+          <div class="chip" data-cat="0">开发</div>
+          <div class="chip" data-cat="1">网络</div>
+          <div class="chip" data-cat="2">媒体</div>
+          <div class="chip" data-cat="3">工具</div>
+        </div>
+        <div class="plist" id="pkgList"></div>
+        <div class="pqueue glass" id="pkgQueue"></div>
+      </div>
+
+      <!-- 资源监控 -->
+      <div class="view" id="v-monitor">
+        <div class="v-head"><h1>资源监控</h1><span class="sub back" data-back="v-categories">← 返回</span></div>
+        <div class="gauges">
+          <div class="gcard glass"><div class="gt"><b>CPU</b><span id="mCpu">--</span></div><div class="gsub">1 秒 · /proc/stat</div><div class="spark" id="sparkCpu"></div></div>
+          <div class="gcard glass"><div class="gt"><b>内存</b><span id="mMem">--</span></div><div class="gsub">MemTotal − MemAvailable</div><div class="spark" id="sparkMem"></div></div>
+          <div class="gcard glass"><div class="gt"><b>磁盘</b><span id="mDisk">--</span></div><div class="gsub">StatFs · /data</div><div class="spark" id="sparkDisk"></div></div>
+        </div>
+        <div class="plist2">
+          <div class="ttl">进程（本应用可见）</div>
+          <div class="note">Android 11+ hidepid：仅同 uid 进程可见（发行版内 proot/apt 都在列）</div>
+          <div id="procList"></div>
+        </div>
+      </div>
+
+      <!-- 新手引导（首启 4 步，D13） -->
+      <div class="wizard" id="wizard">
+        <div class="wdots"><i></i><i></i><i></i><i></i></div>
+        <div class="wstep glass"></div>
+        <div class="wbtns">
+          <div class="btn" id="owPrev">上一步</div>
+          <div class="btn fill" id="owNext">下一步</div>
+        </div>
+      </div>
+
+      <!-- AI 配置屏 -->
+      <div class="view" id="v-aiconfig">
+        <div class="v-head"><h1 style="font-size:24px">AI 配置</h1><span class="sub back" id="aiBack" style="cursor:pointer;color:var(--accent)">← 返回</span></div>
+        <div class="aip-cfg">
+          <div class="field glass">
+            <label>服务商（API Provider）</label>
+            <select id="cfgProvider">
+              <option value="Zhipu">智谱 AI（GLM）</option>
+              <option value="DeepSeek">DeepSeek</option>
+              <option value="Qwen">通义千问（qwen）</option>
+              <option value="Moonshot">Kimi（月之暗面）</option>
+              <option value="OpenAICompatible">OpenAI 兼容（自定义）</option>
+              <option value="Local">本地模型（端侧）</option>
+            </select>
+          </div>
+          <div class="field glass">
+            <label>API Key</label>
+            <input id="cfgKey" type="password" placeholder="粘贴你的 Key…" value="sk-******************" />
+            <label style="margin-top:8px">落盘前经 <b>AndroidKeyStore AES-GCM</b> 加密，密钥不出安全硬件；即使 root 也难在别机还原。</label>
+          </div>
+          <div class="field glass">
+            <label>Base URL（自定义可改）</label>
+            <input id="cfgUrl" value="https://open.bigmodel.cn/api/paas/v4" />
+          </div>
+          <div class="field glass">
+            <label>模型名</label>
+            <input id="cfgModel" value="glm-4-flash" />
+          </div>
+          <div class="field glass">
+            <label>温度（Temperature）</label>
+            <input type="range" id="cfgTemp" min="0" max="10" value="3" />
+            <label style="margin-top:6px">当前 <b id="cfgTempV">0.3</b> · 小白场景建议 0.3，减少工具调用失误</label>
+          </div>
+          <div class="save-btn" id="cfgSave">保存配置</div>
+        </div>
+      </div>
+
+      <!-- 控制中心（跟手 + 音量键） -->
+      <div class="cc" id="cc">
+        <div class="cc-grab"><i></i></div>
+        <div class="cc-blur glass">
+          <div class="cc-top">
+            <div class="cc-ring" id="ccTrans"><div class="cc-ic"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/></svg></div><span id="ccTransV">62%</span></div>
+            <div class="cc-meta"><b id="ccTheme">浅色</b><span>点击切换主题</span></div>
+          </div>
+          <div class="cc-tiles">
+            <div class="cc-tile on" data-sw><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>无线</span></div>
+            <div class="cc-tile"><svg viewBox="0 0 24 24"><path d="M8 10l8 4-8 4z"/></svg><span>AirDrop</span></div>
+            <div class="cc-tile"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/></svg><span>个人热点</span></div>
+            <div class="cc-tile"><svg viewBox="0 0 24 24"><path d="M6 12h12"/></svg><span>蓝牙</span></div>
+          </div>
+          <div class="cc-widget glass">
+            <div class="cc-wlab">小组件 · 快捷动作</div>
+            <div class="wbtns">
+              <div class="wbtn" data-w="clear"><svg viewBox="0 0 24 24"><path d="M6 7h12M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>清屏</div>
+              <div class="wbtn" data-w="connect"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z"/></svg>速连</div>
+              <div class="wbtn" data-w="help"><svg viewBox="0 0 24 24"><path d="M9 9a3 3 0 1 1 4 2.8c-1 .5-1 1-1 2.2M12 18v.01"/></svg>帮助</div>
+              <div class="wbtn" data-w="shot"><svg viewBox="0 0 24 24"><path d="M4 8h4l2-2h4l2 2h4v11H4zM12 11a3 3 0 1 0 0 6 3 3 0 0 0 0-6"/></svg>截屏</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 面板（上滑跟手） -->
+      <div class="aip" id="aip">
+        <div class="aip-grab" id="aipGrab"><i></i></div>
+        <div class="aip-body glass">
+          <div class="msgs" id="msgs">
+            <div class="msg ai">你好，我是 moxsh AI。已接入你配置的 <b>智谱</b>，可以直接用自然语言查容器状态、写脚本、跑命令。</div>
+          </div>
+          <div class="ai-in"><input id="aiInput" placeholder="问点什么，或发命令…"/><div class="ai-send" id="aiSend"><svg viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8z"/></svg></div></div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+      <!-- 底部标签栏 -->
+      <div class="tabbar">
+        <div class="tab active" data-view="v-terminal"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM7 9l3 3-3 3M13 15h6"/></svg>终端</div>
+        <div class="tab" data-view="v-categories"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>分类</div>
+        <div class="tab" data-view="v-settings"><svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/></svg>设置<span class="badge" id="aiBadge">1</span></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const I = p => `<svg viewBox="0 0 24 24">${p}</svg>`;
+const flash = t => { const el=$('#toast'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),1600); };
+
+/* 视图切换 */
+function showView(id){ $$('.view').forEach(v=>v.classList.toggle('on', v.id===id)); }
+$$('.tab').forEach(t=>t.addEventListener('click',()=>showView(t.dataset.view)));
+$('#aiBack').addEventListener('click',()=>showView('v-settings'));
+$('#goAiconfig').addEventListener('click',()=>showView('v-aiconfig'));
+
+/* 终端（单会话，自研渲染层，有真实内容） */
+const termLines = [
+  {t:'moxsh v0.9   ·   zsh 5.9   ·   arm64', c:'dim'},
+  {t:'────────────────────────────', c:'dim'},
+  {t:'mox $ ', c:'cmd'},
+  {t:'  projects/   moxsh/   downloads/   .moxshrc', c:''},
+  {t:'mox $ neofetch', c:'cmd'},
+  {t:'  OS:       moxsh 0.9  ·  Liquid Glass / iOS 27', c:'ok'},
+  {t:'  Shell:    zsh 5.9', c:''},
+  {t:'  Terminal: 自研 Canvas 渲染层', c:''},
+  {t:'  Uptime:   12m 40s', c:''},
+  {t:'mox $ _', c:'cmd'},
+];
+function renderTerm(){
+  const out=$('#term-out'); out.innerHTML='';
+  termLines.forEach(l=>{ const d=document.createElement('div'); d.className='ln'+(l.c?' '+l.c:''); d.textContent=l.t; out.appendChild(d); });
+  out.scrollTop=out.scrollHeight;
+}
+
+/* 会话管理（Termux 式：环境色点 / 长按改名 / 退出码非0红删除线 / 新建） */
+const ENV={ container:{c:'#0a84ff', t:'容器'}, build:{c:'#30d158', t:'构建'}, normal:{c:'#8a90a0', t:'本地'} };
+let sessions=[
+  {id:1, name:'本地终端',   env:'normal',    cwd:'~',                active:true,  exit:0},
+  {id:2, name:'Ubuntu 容器', env:'container', cwd:'/root',            active:false, exit:0},
+  {id:3, name:'构建任务',   env:'build',     cwd:'~/projects/moxsh', active:false, exit:1},
+];
+let sessSeq=3;
+function activeSess(){ return sessions.find(s=>s.active) || sessions[0]; }
+function renderSess(){
+  const list=$('#sessList'); list.innerHTML='';
+  sessions.forEach(s=>{
+    const e=ENV[s.env];
+    const it=document.createElement('div');
+    it.className='sess-item'+(s.active?' on':'')+(s.exit!==0?' dead':'');
+    it.innerHTML=`<span class="sess-dot" style="background:${e.c}"></span>`+
+      `<div class="sess-meta"><b>${s.name}</b><span>${e.t} · ${s.cwd}${s.exit!==0?' · 退出码 '+s.exit:''}</span></div>`+
+      (s.exit!==0?'<span class="sess-kill">结束</span>':'<span class="sess-tag">'+(s.active?'当前':'切换')+'</span>');
+    it.addEventListener('click',ev=>{ if(ev.target.classList.contains('sess-kill')){ killSess(s.id); return; } switchSess(s.id); });
+    let lpT=null;
+    it.addEventListener('pointerdown',()=>{ lpT=setTimeout(()=>{ const n=prompt('重命名会话', s.name); if(n){ s.name=n.trim()||s.name; renderSess(); } },540); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>it.addEventListener(ev,()=>clearTimeout(lpT)));
+    list.appendChild(it);
+  });
+  $('#sessCount').textContent=sessions.length+' 个会话';
+  const a=activeSess(); if(a) $('#term-title').textContent='mox · '+a.name;
+}
+function switchSess(id){ sessions.forEach(s=>s.active=(s.id===id)); renderSess(); closeDrawer(); flash('已切换到「'+activeSess().name+'」'); }
+function killSess(id){ const i=sessions.findIndex(s=>s.id===id); if(i<0) return; const wasActive=sessions[i].active, nm=sessions[i].name; sessions.splice(i,1);
+  if(!sessions.length) sessions.push({id:++sessSeq, name:'本地终端', env:'normal', cwd:'~', active:true, exit:0});
+  else if(wasActive) sessions[0].active=true;
+  renderSess(); flash('已结束会话「'+nm+'」'); }
+function newSess(){ const n=prompt('新会话名称', '会话 '+(sessions.length+1)); if(n===null) return;
+  sessions.forEach(s=>s.active=false);
+  sessions.push({id:++sessSeq, name:(n.trim()||('会话 '+sessions.length)), env:'normal', cwd:'~', active:true, exit:0});
+  renderSess(); closeDrawer(); flash('已新建会话'); }
+function openDrawer(){ $('#sessDrawer').classList.add('on'); $('#scrim').classList.add('on'); }
+function closeDrawer(){ $('#sessDrawer').classList.remove('on'); $('#scrim').classList.remove('on'); }
+$('#sessBtn').addEventListener('click',openDrawer);
+$('#scrim').addEventListener('click',closeDrawer);
+$('#sessNew').addEventListener('click',newSess);
+
+/* 分类（通用分类卡，点一下有反馈） */
+const cats=[
+  {ic:I('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'), nm:'插件市场', ds:'扩展与脚本上架', feat:true},
+  {ic:I('<path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18"/>'), nm:'终端主题', ds:'配色与玻璃'},
+  {ic:I('<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2M7 14h6"/>'), nm:'键盘与手势', ds:'快捷与映射'},
+  {ic:I('<path d="M5 6h14v12H5zM8 9h8M8 12h8"/>'), nm:'字体', ds:'等宽字体库'},
+  {ic:I('<path d="M12 3v18M5 8l7-5 7 5"/>'), nm:'自动化', ds:'任务与触发器'},
+  {ic:I('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>'), nm:'系统', ds:'环境与权限'},
+  {ic:I('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/>'), nm:'外观', ds:'浅色 / 深色'},
+  {ic:I('<path d="M4 7h16v10H4zM8 7v10"/>'), nm:'文件', ds:'文件管理器'},
+  {ic:I('<circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8v.01"/>'), nm:'关于', ds:'版本与许可'},
+];
+function renderCats(){ const g=$('#catGrid'); g.innerHTML='';
+  cats.forEach(c=>{ const d=document.createElement('div'); d.className='cat glass'+(c.feat?' feat':'');
+    d.innerHTML=`<div class="ic">${c.ic}</div><div class="tx"><b>${c.nm}</b><span>${c.ds}</span></div>`;
+    d.addEventListener('click',()=>flash('打开：'+c.nm));
+    g.appendChild(d); });
+}
+
+/* 控制中心（跟手 + 音量键） */
+let ccOpen=false;
+function openCC(){ $('#cc').classList.add('on'); ccOpen=true; }
+function closeCC(){ $('#cc').classList.remove('on'); ccOpen=false; }
+$('#keyVol').addEventListener('click',openCC);
+$('#ccTheme').addEventListener('click',()=>{ const d=document.documentElement; d.dataset.theme = d.dataset.theme==='dark'?'light':'dark';
+  $('#ccTheme').textContent = d.dataset.theme==='dark'?'深色':'浅色'; });
+$$('.cc-tile').forEach(t=>t.addEventListener('click',()=>{ const on=t.dataset.on==='1'; t.dataset.on=on?'0':'1'; t.classList.toggle('on',!on); flash((on?'关闭':'开启')+'：'+t.querySelector('span').textContent.trim()); }));
+$$('.wbtn').forEach(b=>b.addEventListener('click',()=>flash('执行：'+b.textContent.trim())));
+// 透明度环
+function applyGA(v){ $('#gaVal').textContent=v+'%'; $('#ccTransV').textContent=v+'%';
+  const a=(0.40 + v/100*0.40).toFixed(3); document.documentElement.style.setProperty('--ga', a);
+  $('#ccTrans').style.background=`conic-gradient(var(--accent) ${v*3.6}deg, var(--tile) 0)`;
+}
+let gaDrag=false;
+$('#ccTrans').addEventListener('pointerdown',e=>{ gaDrag=true; $('#ccTrans').setPointerCapture(e.pointerId); });
+$('#ccTrans').addEventListener('pointermove',e=>{ if(!gaDrag) return; const r=$('#ccTrans').getBoundingClientRect();
+  const v=Math.max(20,Math.min(90, Math.round(110 - ((e.clientY-r.top)/r.height)*110))); applyGA(v); });
+$('#ccTrans').addEventListener('pointerup',()=>gaDrag=false);
+applyGA(62);
+$('#gaSlider').addEventListener('input',e=>applyGA(+e.target.value));
+
+/* AI 面板（上滑跟手） */
+function openAI(){ $('#aip').classList.add('on'); $('#aiBadge')?.remove(); }
+function closeAI(){ $('#aip').classList.remove('on'); }
+$('#aiSend').addEventListener('click',sendAI);
+$('#aiInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendAI(); });
+function sendAI(){ const v=$('#aiInput').value.trim(); if(!v) return;
+  const m=document.createElement('div'); m.className='msg me'; m.textContent=v; $('#msgs').appendChild(m); $('#aiInput').value='';
+  const a=document.createElement('div'); a.className='msg ai'; a.textContent='（已通过 OpenAI 兼容协议发往你配置的模型…）'; $('#msgs').appendChild(a);
+  $('#msgs').scrollTop=$('#msgs').scrollHeight; }
+
+/* AI 配置屏 */
+const PROV={ Zhipu:['https://open.bigmodel.cn/api/paas/v4','glm-4-flash'], DeepSeek:['https://api.deepseek.com','deepseek-chat'],
+  Qwen:['https://dashscope.aliyuncs.com/compatible-mode/v1','qwen-plus'], Moonshot:['https://api.moonshot.cn/v1','moonshot-v1-8k'],
+  OpenAICompatible:['',''], Local:['http://127.0.0.1:8080/v1','local'] };
+$('#cfgProvider').addEventListener('change',e=>{ const p=PROV[e.target.value]; if(p[0]) $('#cfgUrl').value=p[0]; if(p[1]) $('#cfgModel').value=p[1]; });
+$('#cfgTemp').addEventListener('input',e=>$('#cfgTempV').textContent=(e.target.value/10).toFixed(1));
+$('#cfgSave').addEventListener('click',()=>flash('已保存（Key 经 AndroidKeyStore 加密）'));
+
+/* 手势（全跟手） */
+let g=null, startX=0, startY=0, moved=0, lock=null, t0=0, taps=[];
+const screen=$('#screen');
+screen.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.cc,.aip,.tab,.tabbar,.cat,.bcard,.wbtn,.mini,.sw,.cc-round,.cc-tile,.keycap,.glass.field,.save-btn,.row,.seg2,.chip,.dcard,.prow,.gcard,.pitem,.opt,.wizard,.drawer,.scrim,.sess-item,.sess-new,#keyVol,#sessBtn,#ccTrans')) return;
+  startX=e.clientX; startY=e.clientY; moved=0; lock=null; t0=Date.now();
+  const r=screen.getBoundingClientRect();
+  const topZone = e.clientY - r.top < r.height*0.16;
+  const termZone = $('#v-terminal').classList.contains('on') && e.clientY - r.top > r.height*0.20 && e.clientY - r.top < r.height*0.86;
+  g={x:e.clientX,y:e.clientY,topZone,termZone};
+});
+screen.addEventListener('pointermove',e=>{
+  if(!g) return; const dx=e.clientX-g.x, dy=e.clientY-g.y; moved=Math.max(moved,Math.abs(dx)+Math.abs(dy));
+  if(!lock && moved>10){ if(g.topZone && dy>0) lock='cc';
+    else if(g.termZone && dy<-40) lock='ai'; }
+  if(lock==='cc'){ const max=screen.getBoundingClientRect().height; $('#cc').style.transform='translateY('+Math.max(0,Math.min(max,dy))+'px)'; $('#cc').classList.add('on'); }
+  else if(lock==='ai'){ const max=screen.getBoundingClientRect().height; $('#aip').style.transform='translateY('+Math.max(0,Math.min(max,-dy))+'px)'; $('#aip').classList.add('on'); }
+});
+screen.addEventListener('pointerup',e=>{
+  if(!g){ return; }
+  const dy=e.clientY-g.y;
+  if(lock==='cc'){ if(dy>120){ $('#cc').classList.add('on'); ccOpen=true; } else { closeCC(); } $('#cc').style.transform=''; }
+  else if(lock==='ai'){ if(-dy>120){ openAI(); } else { closeAI(); } $('#aip').style.transform=''; }
+  g=null; lock=null;
+});
+// 控制中心下滑收起
+$('#cc').addEventListener('pointerdown',e=>{ if(e.target.closest('.cc-round,.cc-tile,.wbtn,.cc-slider,#ccTrans')) return; g={cc:true,sy:e.clientY}; });
+$('#cc').addEventListener('pointermove',e=>{ if(!g||!g.cc) return; const dy=e.clientY-g.sy; if(dy>0) $('#cc').style.transform='translateY('+dy+'px)'; });
+$('#cc').addEventListener('pointerup',e=>{ if(!g||!g.cc) return; const dy=e.clientY-g.sy; if(dy>120) closeCC(); $('#cc').style.transform=''; g=null; });
+// AI 面板下滑收起
+$('#aipGrab').addEventListener('pointerdown',e=>{ g={ai:true,sy:e.clientY}; $('#aip').style.transition='none'; });
+window.addEventListener('pointermove',e=>{ if(!g||!g.ai) return; const dy=e.clientY-g.sy; if(dy>0) $('#aip').style.transform='translateY('+dy+'px)'; });
+window.addEventListener('pointerup',e=>{ if(!g||!g.ai) return; const dy=e.clientY-g.sy; if(dy>120) closeAI(); $('#aip').style.transition=''; $('#aip').style.transform=''; g=null; });
+
+/* 键盘 */
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeCC(); closeAI(); closeDrawer(); return; }
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT') return;
+  if(e.key==='v'||e.key==='V') openCC();
+  if(e.key==='u'||e.key==='U') openAI();
+  if(e.key==='1') showView('v-terminal');
+  if(e.key==='2') showView('v-categories');
+  if(e.key==='3') showView('v-settings');
+});
+
+/* 开关 */
+$$('[data-sw]').forEach(s=>s.addEventListener('click',()=>s.classList.toggle('on')));
+
+/* ===== 小白专区：图形化容器管理（D13 四件套） ===== */
+// ---- 发行版管理器 ----
+const distros=[
+  {id:'ubuntu', name:'Ubuntu',  ver:'24.04 LTS', size:520, color:'#E95420', inst:true},
+  {id:'debian', name:'Debian',  ver:'12',       size:480, color:'#A81D33', inst:false},
+  {id:'kali',   name:'Kali',    ver:'2024.3',   size:610, color:'#557C27', inst:false},
+  {id:'alpine', name:'Alpine',  ver:'3.20',     size:140, color:'#0D597F', inst:false},
+];
+function renderDistro(){
+  const g=$('#dlist'); g.innerHTML='';
+  distros.forEach((d,i)=>{
+    const c=document.createElement('div'); c.className='dcard glass';
+    c.innerHTML=`<div class="drow"><div class="dcolor" style="background:${d.color}">${d.name[0]}</div>`+
+      `<div class="dinfo"><b>${d.name} ${d.ver}</b><span>${d.inst?'已安装':'未安装'} · 约 ${d.size} MB</span></div>`+
+      `<div class="dbadge ${d.inst?'on':''}">${d.inst?'已安装':'未安装'}</div></div>`+
+      `<div class="dbar"><i></i></div><div class="dact"></div>`;
+    const act=c.querySelector('.dact');
+    if(!d.inst){
+      const b=document.createElement('div'); b.className='btn fill'; b.textContent='一键安装';
+      b.onclick=()=>installDistro(i,b); act.appendChild(b);
+    } else {
+      const s=document.createElement('div'); s.className='btn fill'; s.textContent='启动';
+      s.onclick=()=>{ flash('已为 '+d.name+' 开新终端'); showView('v-terminal'); };
+      const bak=document.createElement('div'); bak.className='btn'; bak.textContent='备份';
+      bak.onclick=()=>flash('已备份 '+d.name+' 到 Download/moxsh-backups');
+      const del=document.createElement('div'); del.className='btn danger'; del.textContent='删除';
+      del.onclick=()=>{ d.inst=false; renderDistro(); flash('已删除 '+d.name); };
+      act.append(s,bak,del);
+    }
+    g.appendChild(c);
+  });
+}
+function installDistro(i,btn){
+  const d=distros[i]; const card=btn.closest('.dcard'); const bar=card.querySelector('.dbar > i');
+  btn.textContent='安装中…'; btn.style.pointerEvents='none';
+  let p=0; const t=setInterval(()=>{
+    p+=Math.round(8+Math.random()*12);
+    if(p>=100){ p=100; clearInterval(t); d.inst=true; renderDistro(); flash(d.name+' 安装完成，可启动'); }
+    bar.style.width=p+'%';
+  },260);
+}
+
+// ---- 图形包管理器 ----
+const pkgs=[
+  {n:'python', v:'3.12.3', s:'Python 解释器与标准库', sz:38, src:0, cat:0, inst:true},
+  {n:'nodejs', v:'20.12.2', s:'Node.js 运行时与 npm', sz:42, src:1, cat:0, inst:false},
+  {n:'nginx',  v:'1.24.0', s:'高性能 Web 服务器', sz:6, src:1, cat:1, inst:false},
+  {n:'ffmpeg', v:'6.1.1', s:'音视频转码与流处理', sz:96, src:0, cat:2, inst:false},
+  {n:'vim',    v:'9.1', s:'模态文本编辑器', sz:9, src:0, cat:3, inst:true},
+  {n:'git',    v:'2.43.0', s:'分布式版本控制', sz:15, src:0, cat:3, inst:false},
+  {n:'clang',  v:'18.1.3', s:'C/C++ 编译器（LLVM）', sz:210, src:0, cat:0, inst:false},
+  {n:'openssh',v:'9.6', s:'SSH 客户端/服务端', sz:12, src:0, cat:1, inst:true},
+];
+let pkgSrc=0, pkgCat=-1;
+const queue=[];
+function mkBtn(t,fn,danger,fill){ const b=document.createElement('div'); b.className='btn'+(fill?' fill':'')+(danger?' danger':''); b.style.flex='0 0 auto'; b.style.padding='9px 14px'; b.style.fontSize='12.5px'; b.textContent=t; b.onclick=fn; return b; }
+function renderPkgs(){
+  $$('#v-pkgs .seg2 > div').forEach((el,idx)=>el.classList.toggle('on',idx===pkgSrc));
+  $$('#v-pkgs .chip').forEach((el)=>el.classList.toggle('on', +el.dataset.cat===pkgCat));
+  const kw=($('#pkgKw').value||'').trim().toLowerCase();
+  const list=$('#pkgList'); list.innerHTML='';
+  pkgs.filter(p=>p.src===pkgSrc && (pkgCat<0||p.cat===pkgCat) && (!kw||p.n.toLowerCase().includes(kw)||p.s.toLowerCase().includes(kw)))
+    .forEach(p=>{
+      const r=document.createElement('div'); r.className='prow glass';
+      r.innerHTML=`<div class="pinfo"><b>${p.n} <em>${p.v}</em></b><span>${p.s} · 约 ${p.sz} MB${p.inst?' · 已安装':''}</span></div>`;
+      const act=document.createElement('div'); act.style.cssText='display:flex;gap:6px;flex:0 0 auto';
+      if(p.inst){ act.append(mkBtn('更新',()=>enq(p,2)), mkBtn('卸载',()=>enq(p,1),true)); }
+      else { act.append(mkBtn('安装',()=>enq(p,0),false,true)); }
+      r.appendChild(act); list.appendChild(r);
+    });
+  renderQueue();
+}
+function enq(p,op){ if(queue.find(q=>q.n===p.n&&q.op===op&&q.state<2)) return; const q={n:p.n,op,p,state:0,pct:0}; queue.push(q); renderQueue(); runQ(q); }
+function runQ(q){ q.state=1; let p=0; const t=setInterval(()=>{ p+=Math.round(10+Math.random()*15); if(p>=100){ p=100; clearInterval(t); q.state=2; q.p.inst=(q.op!==1); renderPkgs(); } q.pct=p; renderQueue(); },240); }
+function renderQueue(){ const q=$('#pkgQueue'); if(!queue.length){ q.style.display='none'; return; } q.style.display='flex'; q.innerHTML='<b>安装队列</b>'; queue.forEach(qq=>{ const row=document.createElement('div'); row.className='pq'; const label=(qq.op===0?'安装':qq.op===1?'卸载':'更新')+' '+qq.n; const status=qq.state===0?'排队中':qq.state===1?qq.pct+'%':(qq.state===2?'✓ 完成':'✗ 失败'); row.innerHTML=`<span>${label}</span><span class="x">清除</span>`; row.querySelector('.x').onclick=()=>{ const i=queue.indexOf(qq); if(i>=0)queue.splice(i,1); renderQueue(); }; q.appendChild(row); }); }
+
+// ---- 资源监控 ----
+const procs=[
+  {pid:1024, n:'proot', cpu:12, mem:84},
+  {pid:1188, n:'apt', cpu:4, mem:32},
+  {pid:1310, n:'python3', cpu:7, mem:56},
+  {pid:1402, n:'nginx', cpu:1, mem:6},
+  {pid:1503, n:'node', cpu:3, mem:48},
+];
+let cpuH=[20,22,18,25,28,24,21,26,30,23,19,27,31,28,24], memH=[40,42,41,44,46,43,42,45,47,44,41,46,48,45,43], diskH=[60,60,61,60,62,61,60,61,63,60,61,62,61,60,61];
+function spark(el,arr){ el.innerHTML=''; const max=Math.max(...arr,1); arr.slice(-22).forEach(v=>{ const i=document.createElement('i'); i.style.height=(v/max*100)+'%'; el.appendChild(i); }); }
+function renderMonitor(){
+  $('#mCpu').textContent=cpuH[cpuH.length-1]+'%';
+  $('#mMem').textContent='3.2 / 7.5 GB';
+  $('#mDisk').textContent='61.4 / 128 GB';
+  spark($('#sparkCpu'),cpuH); spark($('#sparkMem'),memH); spark($('#sparkDisk'),diskH);
+  const pl=$('#procList'); pl.innerHTML='';
+  procs.forEach(p=>{ const it=document.createElement('div'); it.className='pitem'; it.innerHTML=`<span class="pn">${p.n}</span><span class="pm">pid ${p.pid}</span><span class="pm">CPU ${p.cpu}%</span><span class="pm">MEM ${p.mem}MB</span><span class="k">结束</span>`; it.querySelector('.k').onclick=()=>flash('已结束 '+p.n+'（pid '+p.pid+'）'); pl.appendChild(it); });
+}
+
+// ---- 新手引导 wizard ----
+let owStep=0;
+const owSteps=[
+  {h:'欢迎来到 moxsh', p:'moxsh 是一个零命令行门槛的移动 Linux 终端：100% 自研内核、全面兼容 Termux 生态、全应用液态玻璃界面，图形化装软件、看资源，全程不用敲命令。'},
+  {h:'挑一个发行版装上', opts:[['ubuntu','Ubuntu','新手首选'],['debian','Debian',''],['kali','Kali',''],['alpine','Alpine','最轻量']]},
+  {h:'换国内源（下载提速）', opts:[['tuna','清华 TUNA',''],['ustc','中科大 USTC','']]},
+  {h:'装你的第一个软件', opts:[['python','python','新手首选'],['nodejs','nodejs',''],['vim','vim','']]},
+];
+let owSel={1:'ubuntu',2:'tuna',3:'python'};
+function renderWizard(){
+  $$('#wizard .wdots i').forEach((d,i)=>d.classList.toggle('on',i===owStep));
+  const s=owSteps[owStep]; const body=$('#wizard .wstep'); body.innerHTML=`<h2>${s.h}</h2>`;
+  if(s.p) body.innerHTML+=`<p>${s.p}</p>`;
+  if(s.opts){ const wrap=document.createElement('div'); wrap.style.cssText='display:flex;flex-direction:column;gap:9px;margin-top:4px'; s.opts.forEach(([id,label,note])=>{ const o=document.createElement('div'); o.className='opt'+(owSel[owStep]===id?' on':''); o.innerHTML=`<b>${label}</b><span>${note}</span>`; o.onclick=()=>{ owSel[owStep]=id; renderWizard(); }; wrap.appendChild(o); }); body.appendChild(wrap); }
+  if(owStep===3){ const note=document.createElement('p'); note.innerHTML='点「完成，开始使用」进入终端。进阶：想跑图形界面？（桌面环境 + VNC 后续版本提供）'; body.appendChild(note); }
+}
+function openWizard(){ owStep=0; renderWizard(); $('#wizard').classList.add('on'); }
+function closeWizard(){ $('#wizard').classList.remove('on'); }
+
+/* 小白专区：入口与交互绑定 */
+$$('#v-categories .bcard').forEach(c=>c.addEventListener('click',()=>{ const go=c.dataset.go; if(go==='wizard') openWizard(); else showView(go); }));
+$$('[data-back]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.back)));
+$$('#v-pkgs .seg2 > div').forEach(d=>d.addEventListener('click',()=>{ pkgSrc=+d.dataset.src; renderPkgs(); }));
+$$('#v-pkgs .chip').forEach(c=>c.addEventListener('click',()=>{ pkgCat=+c.dataset.cat; renderPkgs(); }));
+$('#pkgKw').addEventListener('input',renderPkgs);
+$('#owPrev').addEventListener('click',()=>{ if(owStep>0){ owStep--; renderWizard(); } });
+$('#owNext').addEventListener('click',()=>{ if(owStep<3){ owStep++; renderWizard(); } else { closeWizard(); flash('向导完成，开始使用 moxsh'); } });
+
+/* 初始化 */
+renderTerm(); renderSess(); renderCats(); renderDistro(); renderPkgs(); renderMonitor();
+</script>
+</body>
+</html>
