@@ -366,7 +366,7 @@
       <div class="slider-text" id="sliderText">按住滑块，拖到最右侧</div>
       <div class="slider-knob" id="sliderKnob" role="slider" aria-label="滑动完成验证"><span>›</span></div>
     </div>
-    <div class="gate-note">无需答题 · 仅作人机区分 · <a href="#" id="gateWhy">为什么？</a></div>
+    <div class="gate-note">无需答题 · <a href="#" id="gateSkip">直接访问</a> · <a href="#" id="gateWhy">为什么？</a></div>
   </div>
 </div>
 
@@ -437,19 +437,18 @@ document.getElementById('ghStar').href=GH_BASE;
   var VERIFY_KEY='mox_verified';
   function range(){return Math.max(0, slider.clientWidth - knob.offsetWidth - 8);}
   function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
+  // 仅把"确定性机器人信号"判为异常：navigator.webdriver（无头/自动化）或明显爬虫 UA。
+  // 普通浏览器（含隐私模式、移动端）绝不会被误判 → 导航与下载永远可用，永不误锁真人。
   function risk(){var s=0;
-    if(navigator.webdriver)s+=4;
+    if(navigator.webdriver===true)s+=10;
     var ua=(navigator.userAgent||'').toLowerCase();
-    if(/headless|phantom|scrapy|python-requests|go-http|java\/|curl|wget|okhttp|bot/i.test(ua))s+=3;
-    if(!navigator.languages||!navigator.languages.length)s+=1;
-    if(!navigator.hardwareConcurrency)s+=1;
-    if(!window.screen||window.screen.width===0)s+=1;
+    if(/headless|phantomjs|scrapy|python-requests|go-http|java\/|curl\/|wget|okhttp|bot\b|spider|crawl/i.test(ua))s+=10;
     return s;}
   function show(){document.body.classList.add('locked');gate.classList.add('on');gate.setAttribute('aria-hidden','false');}
   function hide(){document.body.classList.remove('locked');gate.classList.remove('on');gate.setAttribute('aria-hidden','true');
     try{sessionStorage.setItem(VERIFY_KEY,'1');}catch(e){}}
   var verified=false;try{verified=sessionStorage.getItem(VERIFY_KEY)==='1';}catch(e){}
-  if(!verified && (risk()>2 || /[?&]verify=1/.test(location.search))){show();}
+  if(!verified && (risk()>0 || /[?&]verify=1/.test(location.search))){show();}
   var drag=false;
   knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
   window.addEventListener('pointermove',function(e){if(!drag)return;var r=slider.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);});
@@ -459,6 +458,8 @@ document.getElementById('ghStar').href=GH_BASE;
   var why=document.getElementById('gateWhy');
   if(why)why.addEventListener('click',function(e){e.preventDefault();
     document.getElementById('gateMsg').textContent='为避免脚本批量抓取与滥用，异常流量需先证明你是真人。过程仅一次，完成后本次会话不再弹出。';});
+  var skip=document.getElementById('gateSkip');
+  if(skip)skip.addEventListener('click',function(e){e.preventDefault();hide();});
 })();
 
 /* 滚动入场 */

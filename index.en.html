@@ -310,7 +310,7 @@
       <div class="slider-text" id="sliderText">Hold and drag the slider to the right</div>
       <div class="slider-knob" id="sliderKnob" role="slider" aria-label="Slide to verify"><span>›</span></div>
     </div>
-    <div class="gate-note">No quiz · just a human check · <a href="#" id="gateWhy">Why?</a></div>
+    <div class="gate-note">No quiz · <a href="#" id="gateSkip">Continue</a> · <a href="#" id="gateWhy">Why?</a></div>
   </div>
 </div>
 
@@ -367,19 +367,18 @@ document.getElementById('ghStar').href=GH_BASE;
   var VERIFY_KEY='mox_verified';
   function range(){return Math.max(0, slider.clientWidth - knob.offsetWidth - 8);}
   function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
+  // Only deterministic bot signals count: navigator.webdriver (headless/automation) or obvious crawler UA.
+  // Real browsers (incl. private mode, mobile) are never mis-flagged → nav & download always work.
   function risk(){var s=0;
-    if(navigator.webdriver)s+=4;
+    if(navigator.webdriver===true)s+=10;
     var ua=(navigator.userAgent||'').toLowerCase();
-    if(/headless|phantom|scrapy|python-requests|go-http|java\/|curl|wget|okhttp|bot/i.test(ua))s+=3;
-    if(!navigator.languages||!navigator.languages.length)s+=1;
-    if(!navigator.hardwareConcurrency)s+=1;
-    if(!window.screen||window.screen.width===0)s+=1;
+    if(/headless|phantomjs|scrapy|python-requests|go-http|java\/|curl\/|wget|okhttp|bot\b|spider|crawl/i.test(ua))s+=10;
     return s;}
   function show(){document.body.classList.add('locked');gate.classList.add('on');gate.setAttribute('aria-hidden','false');}
   function hide(){document.body.classList.remove('locked');gate.classList.remove('on');gate.setAttribute('aria-hidden','true');
     try{sessionStorage.setItem(VERIFY_KEY,'1');}catch(e){}}
   var verified=false;try{verified=sessionStorage.getItem(VERIFY_KEY)==='1';}catch(e){}
-  if(!verified && (risk()>2 || /[?&]verify=1/.test(location.search))){show();}
+  if(!verified && (risk()>0 || /[?&]verify=1/.test(location.search))){show();}
   var drag=false;
   knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
   window.addEventListener('pointermove',function(e){if(!drag)return;var r=slider.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);});
@@ -389,6 +388,8 @@ document.getElementById('ghStar').href=GH_BASE;
   var why=document.getElementById('gateWhy');
   if(why)why.addEventListener('click',function(e){e.preventDefault();
     document.getElementById('gateMsg').textContent='To block scripted scraping and abuse, unusual traffic must prove it is human first. One time only — it will not show again this session.';});
+  var skip=document.getElementById('gateSkip');
+  if(skip)skip.addEventListener('click',function(e){e.preventDefault();hide();});
 })();
 (function(){var els=document.querySelectorAll('.fadeup');
   if(!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in');});return;}
