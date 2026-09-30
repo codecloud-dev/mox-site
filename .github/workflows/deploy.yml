@@ -1,9 +1,11 @@
 name: Deploy to Cloudflare Pages
 
 # 把 mox-site 纯静态官网部署到 Cloudflare Pages（首次运行自动创建同名项目）。
-# 鉴权用仓库 Secrets（CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID），
 # 由 GitHub Actions runner（有公网）经 wrangler 调 Cloudflare，沙箱无需直连。
-# 注：原 cloudflare/pages-action 仓库已被官方下线（404），故改用 wrangler-action。
+#
+# 诊断通道：沙箱无法下载 Actions 日志 zip，故 Deploy 步骤把 wrangler 的完整输出
+# tee 到 /tmp/w.log，失败时用 gh issue 暴露（与 moxsh 的 build.yml 同一手法），
+# 以便在沙箱内也能读到真实报错（多为 token 权限 / accountId 问题）。
 
 on:
   push:
@@ -13,6 +15,7 @@ on:
 permissions:
   contents: read
   deployments: write
+  issues: write
 
 jobs:
   deploy:
@@ -21,9 +24,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy . --project-name=mox-site --branch=main
+          node-version: '20'
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm i -g wrangler@3 2>&1 | tail -3 | tee /tmp/w.log
+          echo "### wrangler whoami" | tee -a /tmp/w.log
+          npx wrangler whoami 2>&1 | tee -a /tmp/w.log
+          echo "### wrangler pages deploy" | tee -a /tmp/w.log
+          set +e
+          npx wrangler pages deploy . --project-name=mox-site --branch=main 2>&1 | tee -a /tmp/w.log
+          rc=${PIPESTATUS[0]}
+          echo "DEPLOY_RC=$rc" | tee -a /tmp/w.log
+          exit $rc
+
+      - name: 诊断失败（建 issue 暴露 wrangler 日志）
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SUMMARY=$(tail -c 20000 /tmp/w.log 2>/dev/null || echo "(无日志)")
+          gh issue create \
+            --title "Pages 部署失败 $(date -u +%FT%TZ)" \
+            --body "$SUMMARY" 2>&1 | head -2 || true
