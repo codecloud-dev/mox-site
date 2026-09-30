@@ -39,6 +39,9 @@ jobs:
           npm i -g wrangler@3 2>&1 | tail -3 | tee /tmp/w.log
           echo "### wrangler whoami" | tee -a /tmp/w.log
           npx wrangler whoami 2>&1 | tee -a /tmp/w.log
+          echo "### ensure project exists" | tee -a /tmp/w.log
+          # wrangler pages deploy 不会自动创建项目；先建（已存在时报错可忽略）
+          npx wrangler pages project create mox-site --production-branch main 2>&1 | tee -a /tmp/w.log || true
           echo "### wrangler pages deploy" | tee -a /tmp/w.log
           set +e
           npx wrangler pages deploy . --project-name=mox-site --branch=main 2>&1 | tee -a /tmp/w.log
