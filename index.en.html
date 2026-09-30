@@ -146,6 +146,28 @@
   .slider-knob:active{cursor:grabbing}
   .gate-note{margin-top:16px;font-size:12px;color:var(--faint)}
   .gate-note a{color:var(--dim);text-decoration:underline}
+
+  /* ===== 登录 / 用户态 ===== */
+  #authSlot{display:flex;align-items:center;gap:10px;margin-left:12px}
+  #authSlot img.av{width:28px;height:28px;border-radius:50%;border:1px solid var(--stroke-hi);object-fit:cover}
+  #loginBtn{color:var(--text)!important;background:linear-gradient(120deg,#5eead4,#818cf8);-webkit-background-clip:text;background-clip:text;font-weight:700}
+  .modal-mask{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+    background:rgba(3,4,9,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px}
+  .modal-mask.show{display:flex}
+  .modal{width:min(420px,94vw);padding:26px 24px}
+  .modal h3{margin:0 0 4px;font-size:18px}
+  .modal p.dim{margin:0 0 16px;color:var(--dim);font-size:13px;line-height:1.5}
+  .modal a.gh{display:block;text-align:center;padding:12px;border-radius:12px;background:linear-gradient(120deg,#5eead4,#818cf8);
+    color:#06070d;font-weight:700;text-decoration:none;margin-bottom:6px}
+  .modal .or{text-align:center;color:var(--faint);font-size:12px;margin:8px 0 12px}
+  .modal input{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--stroke-hi);
+    background:rgba(255,255,255,.05);color:var(--text);margin-bottom:10px;font:inherit;box-sizing:border-box}
+  .modal .row{display:flex;gap:10px}
+  .modal button{flex:1;padding:11px;border-radius:11px;border:none;background:rgba(255,255,255,.1);color:var(--text);font-weight:600;cursor:pointer}
+  .modal button.primary{background:linear-gradient(120deg,#5eead4,#818cf8);color:#06070d}
+  .modal .msg{font-size:12px;margin-top:10px;min-height:16px}
+  .modal .msg.err{color:#ff8da3}
+  .modal .msg.ok{color:#7CFFB2}
 </style>
 </head>
 <body>
@@ -159,6 +181,7 @@
     <a href="#support">Support</a>
     <a href="#contact">Contact</a>
     <a class="lang" href="index.html">中文</a>
+    <span id="authSlot"></span>
   </div>
 </nav>
 
@@ -319,6 +342,22 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- 登录弹窗 -->
+<div class="modal-mask" id="loginMask">
+  <div class="modal glass">
+    <h3>Sign in to mox</h3>
+    <p class="dim">Sign in to use cloud sync, the AI assistant and the admin console. Any GitHub user works.</p>
+    <a class="gh" id="ghLoginBtn" href="#">Sign in with GitHub</a>
+    <div class="or">or</div>
+    <input id="tokInput" type="password" placeholder="Paste a GitHub Token (ghp_ / github_pat_)" autocomplete="off" />
+    <div class="row">
+      <button id="tokLoginBtn" class="primary">Sign in</button>
+      <button id="tokCancelBtn">Cancel</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+</div>
+
 <script>
 var GH_BASE = (function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];return seg.map(function(x){return atob(x);}).join('');})();
 var _K=0x5d;
@@ -398,6 +437,55 @@ document.getElementById('ghStar').href=GH_BASE;
   if(!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in');});return;}
   var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
   els.forEach(function(e){io.observe(e);});})();
+
+/* ===== 登录 / 用户态（对接 mox-id 后端）===== */
+(function(){
+  var API='https://mox-id.3042980037.workers.dev';
+  var slot=document.getElementById('authSlot');
+  var mask=document.getElementById('loginMask');
+  function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
+  function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
+  function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
+  (function(){var u=new URL(location.href);var t=u.searchParams.get('token');
+    if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
+  })();
+  function renderUser(u){
+    slot.innerHTML='<img class="av" src="'+(u.avatar_url||'')+'" alt="" onerror="this.style.display=\'none\'">'
+      +'<a href="'+API+'/admin">Admin</a>'
+      +'<a href="#" id="logoutBtn">Sign out</a>';
+    document.getElementById('logoutBtn').addEventListener('click',function(e){e.preventDefault();delTok();location.reload();});
+  }
+  function renderLogin(){
+    slot.innerHTML='<a href="#" id="loginBtn">Sign in</a>';
+    document.getElementById('loginBtn').addEventListener('click',function(e){e.preventDefault();openLogin();});
+  }
+  function openLogin(){
+    mask.classList.add('show');
+    var m=document.getElementById('loginMsg');m.className='msg';m.textContent='';
+    document.getElementById('ghLoginBtn').href=API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+  }
+  document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
+  mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
+  document.getElementById('tokLoginBtn').addEventListener('click',function(){
+    var t=document.getElementById('tokInput').value.trim();if(!t)return;
+    var m=document.getElementById('loginMsg');m.className='msg';m.textContent='Signing in…';
+    fetch(API+'/auth/token',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:t})})
+      .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
+      .then(function(x){
+        if(!x.ok){m.className='msg err';m.textContent='Failed: '+(x.d.error||'unknown');return;}
+        if(!x.d.is_admin){m.className='msg err';m.textContent='Signed in, but this account is not an admin.';return;}
+        setTok(t);mask.classList.remove('show');location.reload();
+      }).catch(function(){m.className='msg err';m.textContent='Network error.';});
+  });
+  (function(){
+    var t=getTok();
+    if(!t){renderLogin();return;}
+    fetch(API+'/me',{headers:{'Authorization':'Bearer '+t}})
+      .then(function(r){return r.ok?r.json().then(function(d){return{ok:true,d:d};}):{ok:false};})
+      .then(function(x){ if(x.ok&&x.d.user) renderUser(x.d.user); else renderLogin(); })
+      .catch(function(){renderLogin();});
+  })();
+})();
 </script>
 </body>
 </html>
