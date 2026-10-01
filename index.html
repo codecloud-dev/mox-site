@@ -526,9 +526,13 @@ document.getElementById('ghStar').href=GH_BASE;
 
   function renderUser(u){
     slot.innerHTML='<img class="av" src="'+(u.avatar_url||'')+'" alt="" onerror="this.style.display=\'none\'">'
-      +'<a href="'+API+'/admin">管理后台</a>'
       +'<a href="#" id="logoutBtn">退出</a>';
     document.getElementById('logoutBtn').addEventListener('click',function(e){e.preventDefault();delTok();location.reload();});
+  }
+  function renderAdmin(path){
+    /* 管理后台走秘径，地址只由 /me 下发给管理员本人，公开页面不含该路径 */
+    var a=document.createElement('a');a.href=API+path;a.textContent='管理后台';
+    slot.insertBefore(a,slot.firstChild);
   }
   function renderLogin(){
     slot.innerHTML='<a href="#" id="loginBtn">登录</a>';
@@ -559,7 +563,7 @@ document.getElementById('ghStar').href=GH_BASE;
     if(!t){renderLogin();return;}
     fetch(API+'/me',{headers:{'Authorization':'Bearer '+t}})
       .then(function(r){return r.ok?r.json().then(function(d){return{ok:true,d:d};}):{ok:false};})
-      .then(function(x){ if(x.ok&&x.d.user) renderUser(x.d.user); else renderLogin(); })
+      .then(function(x){ if(x.ok&&x.d.user){ renderUser(x.d.user); if(x.d.admin_path) renderAdmin(x.d.admin_path); } else renderLogin(); })
       .catch(function(){renderLogin();});
   })();
 })();
