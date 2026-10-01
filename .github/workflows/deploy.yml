@@ -53,26 +53,36 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
-          BASE=$(npx wrangler pages project list 2>/dev/null | awk '/mox-site/{for(i=1;i<=NF;i++) if($i ~ /pages\.dev/) print $i}' | head -1 | sed 's/,//')
-          BASE="${BASE:-https://mox-site.pages.dev}"
-          echo "验证目标: $BASE"
           S=0
+          BASE="https://mox-site.pages.dev"
+          echo "验证目标: $BASE"
+          # 生产域名/边缘传播就绪重试（最多 ~2 分钟）
+          code=000
+          for i in 1 2 3 4 5 6 8 10 12; do
+            code=$(curl -sS -m 15 -o /dev/null -w '%{http_code}' "$BASE/" || echo 000)
+            [ "$code" = "200" ] && break
+            echo "等待生产域名就绪（$code）… 第 $i 次"; sleep 12
+          done
+          [ "$code" = "200" ] && echo "OK: 首页 200" || { echo "FAIL: 首页不可达（$code）"; S=1; }
+          # 注意：验证一律打 / 根路径；/index.html 可能命中边缘缓存的旧版本
           H=$(curl -sS -m 20 -D - -o /dev/null "$BASE/")
           for hdr in 'x-frame-options: DENY' 'x-content-type-options: nosniff' 'referrer-policy:' 'strict-transport-security:' 'permissions-policy:'; do
             echo "$H" | grep -qi "$hdr" && echo "OK: $hdr" || { echo "FAIL: 缺 $hdr"; S=1; }
           done
-          PG=$(curl -sS -m 20 "$BASE/index.html")
-          echo "$PG" | grep -q 'Content-Security-Policy' && echo "OK: CSP meta" || { echo "FAIL: index.html 缺 CSP"; S=1; }
+          PG=$(curl -sS -m 20 "$BASE/")
+          echo "$PG" | grep -q 'Content-Security-Policy' && echo "OK: CSP meta" || { echo "FAIL: 首页缺 CSP"; S=1; }
           echo "$PG" | grep -q 'src="app.js"' && echo "OK: 外链 app.js" || { echo "FAIL: app.js 未外链"; S=1; }
           echo "$PG" | grep -q '<script>' && { echo "FAIL: 仍有内联脚本"; S=1; } || echo "OK: 无内联脚本"
-          curl -sS -m 20 -o /dev/null -w '%{http_code}' "$BASE/app.js" | grep -q 200 && echo "OK: app.js 200" || { echo "FAIL: app.js 不可达"; S=1; }
+          for f in app.js app.en.js index.css index.en.css; do
+            c=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' "$BASE/$f")
+            [ "$c" = "200" ] && echo "OK: $f 200" || { echo "FAIL: $f -> $c"; S=1; }
+          done
           [ "$S" = 0 ] && echo "✅ 官网安全验证全绿" || {
             gh issue create --title "官网安全验证失败 $(date -u +%FT%TZ)" \
-              --body "安全头/CSP/资源完整性检查未通过，见上方日志。" 2>&1 | head -2 || true; exit 1; }
+              --body "安全头/CSP/资源完整性检查未通过，见 Actions 日志。" 2>&1 | head -2 || true; exit 1; }
 
       - name: 诊断失败（建 issue 暴露 wrangler 日志）
-        if: failure()
+        if: failure() && steps.deploy.outcome == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
