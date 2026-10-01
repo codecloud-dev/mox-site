@@ -49,3 +49,10 @@ python3 -m http.server 8080
 ## 许可证
 
 页面与内容由开发者 **Codecloud** 主导设计，AI 辅助生成并经人工审核。
+
+## 🔒 安全基线
+
+- **全站安全响应头**（Cloudflare Pages `_headers`）：`X-Frame-Options: DENY`（防点击劫持）、`nosniff`、`Referrer-Policy`、`Permissions-Policy`（禁摄像头/麦克风/定位等）、`COOP`、HSTS。
+- **CSP**：生产页 `script-src 'self'` —— 全部脚本外链、内联脚本归零；所有内联 `onclick/onerror` 已改为事件委托；动态渲染走安全 DOM API（不拼 HTML）。登录态 token 出现在 URL 时立即 `history.replaceState` 清除。
+- **后端**（mox-id）：CORS 白名单、全局 `nosniff/DENY/no-referrer/HSTS`、管理后台隐藏秘径（见 mox-id 仓库）。
+- **CI 验证**：每次部署后自动断言安全头、CSP、资源完整性与无内联脚本，失败自动建 issue。
