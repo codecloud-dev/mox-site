@@ -96,6 +96,8 @@ document.getElementById('ghStar').href=GH_BASE;
 /* ===== 登录 / 用户态（对接 mox-id 后端）===== */
 (function(){
   var API='https://mox-id.3042980037.workers.dev';
+  /* 登录链路走官网同域反代（/auth/*、/me 由 CF Pages Functions 转发），workers.dev 部分网络不可达 */
+  var LOGIN_API='';
   var slot=document.getElementById('authSlot');
   var mask=document.getElementById('loginMask');
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
@@ -129,14 +131,14 @@ document.getElementById('ghStar').href=GH_BASE;
   function openLogin(){
     mask.classList.add('show');
     var m=document.getElementById('loginMsg');m.className='msg';m.textContent='';
-    document.getElementById('ghLoginBtn').href=API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    document.getElementById('ghLoginBtn').href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
   }
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;
     var m=document.getElementById('loginMsg');m.className='msg';m.textContent='登录中…';
-    fetch(API+'/auth/token',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:t})})
+    fetch(LOGIN_API+'/auth/token',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:t})})
       .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
       .then(function(x){
         if(!x.ok){m.className='msg err';m.textContent='失败：'+(x.d.error||'未知');return;}
@@ -149,7 +151,7 @@ document.getElementById('ghStar').href=GH_BASE;
   (function(){
     var t=getTok();
     if(!t){renderLogin();return;}
-    fetch(API+'/me',{headers:{'Authorization':'Bearer '+t}})
+    fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
       .then(function(r){return r.ok?r.json().then(function(d){return{ok:true,d:d};}):{ok:false};})
       .then(function(x){ if(x.ok&&x.d.user){ renderUser(x.d.user); if(x.d.admin_path) renderAdmin(x.d.admin_path); } else renderLogin(); })
       .catch(function(){renderLogin();});

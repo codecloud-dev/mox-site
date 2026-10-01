@@ -77,6 +77,11 @@ jobs:
             c=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' "$BASE/$f")
             [ "$c" = "200" ] && echo "OK: $f 200" || { echo "FAIL: $f -> $c"; S=1; }
           done
+          # 登录链路同域反代：start 应 302 到 GitHub 授权页
+          ST=$(curl -sS -m 20 -D - -o /dev/null "$BASE/auth/github/start")
+          echo "$ST" | grep -iE "^HTTP|^location" | sed 's/\(client_id=[A-Za-z0-9]\{6\}\)[A-Za-z0-9]*/\1****/'
+          echo "$ST" | grep -q "^HTTP/2 302" && echo "$ST" | grep -qi "^location: https://github.com/login/oauth/authorize" \
+            && echo "OK: 官网同域 OAuth 反代 302 正常" || { echo "FAIL: /auth/github/start 反代未返回 302"; S=1; }
           [ "$S" = 0 ] && echo "✅ 官网安全验证全绿" || {
             gh issue create --title "官网安全验证失败 $(date -u +%FT%TZ)" \
               --body "安全头/CSP/资源完整性检查未通过，见 Actions 日志。" 2>&1 | head -2 || true; exit 1; }
