@@ -7,13 +7,21 @@ export async function onRequestGet(context) {
   const { request } = context;
   const url = new URL(request.url);
   const upstream = UPSTREAM + url.pathname + url.search;
-  const req = new Request(upstream, request);
-  req.headers.set('X-Forwarded-Host', url.host);
-  const res = await fetch(req, { redirect: 'manual' });
-  const out = new Response(res.body, res);
-  out.headers.set('X-Content-Type-Options', 'nosniff');
-  out.headers.delete('X-Frame-Options'); // 302 跳转与 API 无框架风险，保留官网 _headers 的 DENY 于页面即可
-  return out;
+  try {
+    const req = new Request(upstream, request);
+    req.headers.set('X-Forwarded-Host', url.host);
+    const res = await fetch(req, { redirect: 'manual' });
+    const out = new Response(res.body, res);
+    out.headers.set('X-Content-Type-Options', 'nosniff');
+    out.headers.delete('X-Frame-Options'); // 302 跳转与 API 无框架风险，保留官网 _headers 的 DENY 于页面即可
+    return out;
+  } catch (e) {
+    // 后端不可达时返回可读错误，避免裸 404/500 让用户一脸懵
+    return new Response(
+      JSON.stringify({ error: 'auth_proxy_unavailable', path: url.pathname, detail: String(e) }),
+      { status: 502, headers: { 'content-type': 'application/json; charset=utf-8' } }
+    );
+  }
 }
 
 export const onRequestPost = onRequestGet;
