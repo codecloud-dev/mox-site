@@ -1,18 +1,19 @@
+/* GitHub 地址 base64 分段，避免源码明文账号 */
 var GH_BASE = (function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];return seg.map(function(x){return atob(x);}).join('');})();
+
+/* 联系方式：混淆存储，明文不出现在页面源码中 */
 var _K=0x5d;
 var _QA=[110,109,105,111,100,101,109,109,110,106];
-var _MA=[39,107,107,107,107,107,107,107,107,107,107,29,108,107,110,115,62,50,48];
+var _MA=[39,107,107,107,107,107,107,107,107,107,111,109,111,107,29,108,107,110,115,62,50,48];
 function _d(a){var s='';for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]^_K);return s;}
-function revealContact(){
-  var c=document.getElementById('contactCards');c.classList.add('show');
-  document.getElementById('qqVal').textContent=_d(_QA);
-  document.getElementById('mailVal').textContent=_d(_MA);
-  showToast('Contacts shown');
-}
+/* Pointer glow (rAF-throttled; the glow layer is transform-composited, updates cause zero repaints) */
+var _lr=0,_lx=0,_ly=0,_le=null;
 function bindLight(el){el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();
-  el.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
-  el.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});}
+  _lx=(e.clientX-r.left)/r.width*100;_ly=(e.clientY-r.top)/r.height*100;_le=el;
+  if(!_lr){_lr=requestAnimationFrame(function(){_lr=0;if(!_le)return;
+    _le.style.setProperty('--mx',_lx.toFixed(2)+'%');_le.style.setProperty('--my',_ly.toFixed(2)+'%');});}}, {passive:true});}
 document.querySelectorAll('.glass').forEach(bindLight);
+/* 复制 */
 function copyVal(id){var t=document.getElementById(id).textContent;
   var done=function(){showToast('Copied: '+t);};
   if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,function(){f(t);done();});
@@ -21,17 +22,36 @@ function f(t){var ta=document.createElement('textarea');ta.value=t;ta.style.posi
   document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
 var tt=null;function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show');},2200);}
+
+/* 链接：下载 / GitHub / Star */
 document.getElementById('dlLatest').href=GH_BASE+'/releases/latest';
 document.getElementById('ghLink').href=GH_BASE;
 document.getElementById('starBtn').href=GH_BASE;
 document.getElementById('ghStar').href=GH_BASE;
+
+/* Shared slider (anti-bot gate / email gate), fires onPass when dragged to the far right */
+function makeSlider(root,onPass){
+  var knob=root.querySelector('.slider-knob'),fill=root.querySelector('.slider-fill'),text=root.querySelector('.slider-text');
+  if(!knob)return null;
+  function range(){return Math.max(0,root.clientWidth-knob.offsetWidth-8);}
+  function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
+  var drag=false;
+  knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
+  window.addEventListener('pointermove',function(e){if(!drag)return;var r=root.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);},{passive:true});
+  window.addEventListener('pointerup',function(){if(!drag)return;drag=false;
+    if(parseFloat(knob.style.left||'0')>=range()*0.96){setX(range());if(text)text.textContent='Verified ✓';knob.querySelector('span').textContent='✓';setTimeout(onPass,400);}
+    else setX(0);});
+  return {reset:function(){setX(0);}};
+}
+
+/* 手机预览：指针 + 陀螺仪 视差倾斜（rAF 节流，transform 合成无重排） */
 (function(){
   var dev=document.getElementById('device');if(!dev)return;
   function setTilt(rx,ry){dev.style.setProperty('--rx',rx.toFixed(2)+'deg');dev.style.setProperty('--ry',ry.toFixed(2)+'deg');}
-  var stage=dev.parentElement;
+  var stage=dev.parentElement,pr=0,pnx=0,pny=0;
   stage.addEventListener('pointermove',function(e){var r=stage.getBoundingClientRect();
-    var nx=(e.clientX-r.left)/r.width-0.5, ny=(e.clientY-r.top)/r.height-0.5;
-    setTilt(4-ny*10, -7+nx*14);});
+    pnx=(e.clientX-r.left)/r.width-0.5; pny=(e.clientY-r.top)/r.height-0.5;
+    if(!pr){pr=requestAnimationFrame(function(){pr=0;setTilt(4-pny*10,-7+pnx*14);});}},{passive:true});
   stage.addEventListener('pointerleave',function(){setTilt(4,-7);});
   function onTilt(e){var b=(e.gamma||0), a=(e.beta||0);
     setTilt(4+Math.max(-12,Math.min(12,a*0.12)), -7+Math.max(-14,Math.min(14,b*0.18)));}
@@ -41,54 +61,80 @@ document.getElementById('ghStar').href=GH_BASE;
     } else { window.addEventListener('deviceorientation',onTilt); }
   }
 })();
+
+/* 人机验证闸：异常访问时弹出，滑动即过（无需答题） */
 (function(){
-  var gate=document.getElementById('gate'),knob=document.getElementById('sliderKnob'),
-      fill=document.getElementById('sliderFill'),text=document.getElementById('sliderText'),slider=document.getElementById('slider');
-  if(!gate||!knob)return;
+  var gate=document.getElementById('gate');
+  var slider=document.getElementById('slider');
+  if(!gate||!slider||!slider.querySelector('.slider-knob'))return;
   var VERIFY_KEY='mox_verified';
-  function range(){return Math.max(0, slider.clientWidth - knob.offsetWidth - 8);}
-  function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
+  function show(){document.body.classList.add('locked');gate.classList.add('on');gate.setAttribute('aria-hidden','false');}
+  function hide(){document.body.classList.remove('locked');gate.classList.remove('on');gate.setAttribute('aria-hidden','true');
+    try{sessionStorage.setItem(VERIFY_KEY,'1');}catch(e){}}
+  var verified=false;try{verified=sessionStorage.getItem(VERIFY_KEY)==='1';}catch(e){}
   // Only deterministic bot signals count: navigator.webdriver (headless/automation) or obvious crawler UA.
-  // Real browsers (incl. private mode, mobile) are never mis-flagged → nav & download always work.
   function risk(){var s=0;
     if(navigator.webdriver===true)s+=10;
     var ua=(navigator.userAgent||'').toLowerCase();
     if(/headless|phantomjs|scrapy|python-requests|go-http|java\/|curl\/|wget|okhttp|bot\b|spider|crawl/i.test(ua))s+=10;
     return s;}
-  function show(){document.body.classList.add('locked');gate.classList.add('on');gate.setAttribute('aria-hidden','false');}
-  function hide(){document.body.classList.remove('locked');gate.classList.remove('on');gate.setAttribute('aria-hidden','true');
-    try{sessionStorage.setItem(VERIFY_KEY,'1');}catch(e){}}
-  var verified=false;try{verified=sessionStorage.getItem(VERIFY_KEY)==='1';}catch(e){}
   if(!verified && (risk()>0 || /[?&]verify=1/.test(location.search))){show();}
-  var drag=false;
-  knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
-  window.addEventListener('pointermove',function(e){if(!drag)return;var r=slider.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);});
-  window.addEventListener('pointerup',function(){if(!drag)return;drag=false;
-    if(parseFloat(knob.style.left||'0')>=range()*0.96){setX(range());text.textContent='Verified ✓';knob.querySelector('span').textContent='✓';setTimeout(hide,650);}
-    else{setX(0);}});
+  makeSlider(slider,hide);
   var why=document.getElementById('gateWhy');
   if(why)why.addEventListener('click',function(e){e.preventDefault();
-    document.getElementById('gateMsg').textContent='To block scripted scraping and abuse, unusual traffic must prove it is human first. One time only — it will not show again this session.';});
+    document.getElementById('gateMsg').textContent='To stop bulk scraping, unusual traffic must prove it is human. One swipe only — it will not appear again this session.';});
   var skip=document.getElementById('gateSkip');
   if(skip)skip.addEventListener('click',function(e){e.preventDefault();hide();});
 })();
+
+/* 滚动入场 */
 (function(){var els=document.querySelectorAll('.fadeup');
   if(!('IntersectionObserver'in window)){els.forEach(function(e){e.classList.add('in');});return;}
   var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
   els.forEach(function(e){io.observe(e);});})();
 
+/* ===== Contacts: email behind a verification slider, QQ requires a request note ===== */
+(function(){
+  /* Email: inline slider gate, revealed directly for the rest of the session once verified */
+  var mailVal=document.getElementById('mailVal'),mailSlider=document.getElementById('mailSlider'),
+      mailCopy=document.getElementById('mailCopyBtn');
+  if(mailSlider){
+    var mailShown=false;
+    function showMail(){if(mailShown)return;mailShown=true;
+      mailVal.textContent=_d(_MA);mailSlider.style.display='none';
+      if(mailCopy)mailCopy.style.display='';}
+    try{if(sessionStorage.getItem('mox_mail_ok')==='1')showMail();}catch(e){}
+    makeSlider(mailSlider,function(){try{sessionStorage.setItem('mox_mail_ok','1');}catch(e){}showMail();});
+  }
+  /* QQ: register who you are & what you want first, then reveal + generate the request note */
+  var qqVal=document.getElementById('qqVal'),askBtn=document.getElementById('qqAskBtn'),
+      form=document.getElementById('qqForm'),fromEl=document.getElementById('qqFrom'),
+      whyEl=document.getElementById('qqWhy'),submitBtn=document.getElementById('qqSubmitBtn'),
+      done=document.getElementById('qqDone'),brief=document.getElementById('qqBrief');
+  if(!askBtn)return;
+  function pass(fr,wk){
+    qqVal.textContent=_d(_QA);form.style.display='none';done.style.display='';
+    brief.textContent='I am '+fr+'; I want to '+wk+'. (from the MoX website)';
+    showToast('Request note ready — copy it when adding');
+  }
+  askBtn.addEventListener('click',function(){askBtn.style.display='none';form.style.display='';
+    try{var s=JSON.parse(sessionStorage.getItem('mox_qq_info')||'null');
+      if(s){fromEl.value=s.f;whyEl.value=s.w;}}catch(e){}
+    if(fromEl)fromEl.focus();});
+  submitBtn.addEventListener('click',function(){
+    var fr=(fromEl.value||'').trim(),wk=(whyEl.value||'').trim();
+    if(fr.length<12){showToast('Please describe your background in detail (12+ chars)');fromEl.focus();return;}
+    if(wk.length<6){showToast('Please state what you want (6+ chars)');whyEl.focus();return;}
+    try{sessionStorage.setItem('mox_qq_info',JSON.stringify({f:fr,w:wk}));}catch(e){}
+    pass(fr,wk);
+  });
+})();
+
 /* ===== 登录 / 用户态（对接 mox-id 后端）===== */
 (function(){
-  /* All sign-in traffic goes through the pages.dev edge proxy — never let the
-     browser hit workers.dev directly (*.workers.dev is unreachable on some
-     networks incl. mainland China → clicking "Sign in" would do nothing):
-     - on *.pages.dev: same-origin Functions proxy (LOGIN_API='')
-     - elsewhere (github.io mirror, local dev, future custom domains):
-       cross-origin via https://mox-site.pages.dev — CORS wide open and the
-       Function answers preflights, so fetches with Authorization work too
-     OAuth round trip: any domain → pages.dev/auth/github/start (302 → GitHub)
-     → callback (on pages.dev) → 302 back to the redirect page ?token=...
-     → that page stores the token in its own localStorage */
+  /* Sign-in always goes through the pages.dev edge proxy — never straight to workers.dev.
+     Sign-in / sign-out are fully reload-free: renderUser / renderLogin switch the nav,
+     CTA and modal in place — no white-screen location.reload. */
   var PAGES_ORIGIN = 'https://mox-site.pages.dev';
   var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : PAGES_ORIGIN;
   var slot=document.getElementById('authSlot');
@@ -99,6 +145,7 @@ document.getElementById('ghStar').href=GH_BASE;
   var cta=document.getElementById('loginCta');
   var currentUser=null; /* null = signed out; drives nav / CTA / modal UI in sync once signed in */
   var adminHref='';     /* Admin console secret path, delivered only to admins via /me */
+  var probeState='';    /* ''unknown on online off offline — skip probing once online */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
@@ -106,28 +153,26 @@ document.getElementById('ghStar').href=GH_BASE;
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
 
-  /* Backend reachability probe: drives the status dot; every domain goes through the pages.dev proxy.
-     Must verify the response is JSON — when the proxy breaks, /me falls into the static-site
-     fallback and returns HTML (200); without this guard we'd falsely report "online" */
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
-  function probeBackend(){
+
+  /* Backend probe (JSON guard + cached result): an HTML fallback no longer fakes "online" */
+  function probeBackend(force){
+    if(probeState==='on'&&!force)return;
     fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
       .then(function(r){
         if((r.headers.get('content-type')||'').indexOf('json')<0)throw new Error('not_json');
-        setStatus('on','Sign-in service online');
+        probeState='on';setStatus('on','Sign-in service online');
       })
       .catch(function(){
-        setStatus('off','Sign-in service temporarily unreachable');
+        probeState='off';setStatus('off','Sign-in service temporarily unreachable');
         if(hintEl)hintEl.innerHTML='Cannot reach the sign-in service right now (network restrictions or maintenance). Retry later, or use the primary site: <a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
       });
   }
 
   /* ===== Signed-in UI: nav slot + account CTA + modal, kept in sync ===== */
-
   function renderUser(u){
     currentUser=u;
     if(cta)cta.textContent='Signed in · '+(u.name||u.login||'user');
-    /* Safe DOM building: no HTML concatenation (XSS-proof); hide avatar on load error */
     slot.textContent='';
     var img=document.createElement('img');img.className='av';img.alt='';
     if(u.avatar_url)img.src=u.avatar_url;
@@ -137,8 +182,6 @@ document.getElementById('ghStar').href=GH_BASE;
     slot.appendChild(img);slot.appendChild(out);
   }
   function renderAdmin(path){
-    /* Admin console lives on a secret path; the address is only delivered to admins via /me.
-       Link goes through LOGIN_API (the pages.dev proxy), so it opens from any frontend domain */
     adminHref=LOGIN_API+path;
     var a=document.createElement('a');a.href=adminHref;a.textContent='Console';
     slot.insertBefore(a,slot.firstChild);
@@ -151,9 +194,8 @@ document.getElementById('ghStar').href=GH_BASE;
     if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
   }
 
-  /* Sign out must also revoke the server session — the mox_sid cookie planted by the
-     OAuth callback lasts 30 days; clearing only the local token would let /me fall
-     back to cookie auth on next reload, making "sign out" a no-op */
+  /* Sign out must also revoke the server session (30-day mox_sid cookie), then drop the
+     local token — reload-free: renderLogin switches back instantly with a toast */
   function doLogout(){
     var t=getTok();
     try{
@@ -161,7 +203,9 @@ document.getElementById('ghStar').href=GH_BASE;
         headers:t?{'Authorization':'Bearer '+t}:{}}).catch(function(){});
     }catch(e){}
     delTok();
-    location.reload();
+    mask.classList.remove('show');
+    renderLogin();
+    showToast('Signed out');
   }
 
   function openLogin(){
@@ -187,15 +231,20 @@ document.getElementById('ghStar').href=GH_BASE;
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
     probeBackend();
   }
-  // Both the nav "Sign in" and the account-section CTA open the modal (shows account state when signed in)
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
 
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
   var meCloseBtn=document.getElementById('meCloseBtn');
   if(meCloseBtn)meCloseBtn.addEventListener('click',function(){mask.classList.remove('show');});
   var meLogoutBtn=document.getElementById('meLogoutBtn');
-  if(meLogoutBtn)meLogoutBtn.addEventListener('click',function(){mask.classList.remove('show');doLogout();});
+  if(meLogoutBtn)meLogoutBtn.addEventListener('click',doLogout);
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
+  /* GitHub button instant feedback: response the moment it is tapped, no waiting on the network */
+  var ghBtn=document.getElementById('ghLoginBtn');
+  if(ghBtn){
+    ghBtn.addEventListener('click',function(){ghBtn.classList.add('busy');ghBtn.textContent='Opening GitHub…';});
+    window.addEventListener('pageshow',function(ev){if(ev.persisted){ghBtn.classList.remove('busy');ghBtn.textContent='Sign in with GitHub';}});
+  }
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;
     var m=document.getElementById('loginMsg');m.className='msg';m.textContent='Signing in…';
@@ -203,8 +252,14 @@ document.getElementById('ghStar').href=GH_BASE;
       .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
       .then(function(x){
         if(!x.ok){m.className='msg err';m.textContent='Failed: '+(x.d.error||'unknown');return;}
-        /* Any GitHub user (normal or admin) can sign in; only admins get the console entry */
-        setTok(t);mask.classList.remove('show');location.reload();
+        /* Reload-free sign-in: switch state in place + toast; console entry filled in async (/me only) */
+        setTok(t);mask.classList.remove('show');
+        renderUser(x.d.user);
+        showToast('Signed in · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'welcome'));
+        fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
+          .then(function(r){return r.ok?r.json():null;})
+          .then(function(d){if(d&&d.admin_path)renderAdmin(d.admin_path);})
+          .catch(function(){});
       }).catch(function(){m.className='msg err';m.textContent='Network error.';});
   });
 
@@ -238,7 +293,6 @@ document.getElementById('ghStar').href=GH_BASE;
 document.querySelectorAll('[data-act]').forEach(function(el){
   el.addEventListener('click',function(){
     var a=el.getAttribute('data-act');
-    if(a==='revealContact')revealContact();
-    else if(a==='copy')copyVal(el.getAttribute('data-target'));
+    if(a==='copy')copyVal(el.getAttribute('data-target'));
   });
 });

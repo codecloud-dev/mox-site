@@ -4,18 +4,14 @@ var GH_BASE = (function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkL
 /* 联系方式：混淆存储，明文不出现在页面源码中 */
 var _K=0x5d;
 var _QA=[110,109,105,111,100,101,109,109,110,106];
-var _MA=[39,107,107,107,107,107,107,107,107,107,107,29,108,107,110,115,62,50,48];
+var _MA=[39,107,107,107,107,107,107,107,107,107,111,109,111,107,29,108,107,110,115,62,50,48];
 function _d(a){var s='';for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]^_K);return s;}
-function revealContact(){
-  var c=document.getElementById('contactCards');c.classList.add('show');
-  document.getElementById('qqVal').textContent=_d(_QA);
-  document.getElementById('mailVal').textContent=_d(_MA);
-  showToast('联系方式已显示');
-}
-/* 指针光斑 */
+/* 指针光斑（rAF 节流：光斑层由 transform 合成驱动，更新零重绘） */
+var _lr=0,_lx=0,_ly=0,_le=null;
 function bindLight(el){el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();
-  el.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
-  el.style.setProperty('--my',((e.clientY-r.top)/r.height*100)+'%');});}
+  _lx=(e.clientX-r.left)/r.width*100;_ly=(e.clientY-r.top)/r.height*100;_le=el;
+  if(!_lr){_lr=requestAnimationFrame(function(){_lr=0;if(!_le)return;
+    _le.style.setProperty('--mx',_lx.toFixed(2)+'%');_le.style.setProperty('--my',_ly.toFixed(2)+'%');});}}, {passive:true});}
 document.querySelectorAll('.glass').forEach(bindLight);
 /* 复制 */
 function copyVal(id){var t=document.getElementById(id).textContent;
@@ -33,14 +29,29 @@ document.getElementById('ghLink').href=GH_BASE;
 document.getElementById('starBtn').href=GH_BASE;
 document.getElementById('ghStar').href=GH_BASE;
 
-/* 手机预览：指针 + 陀螺仪 视差倾斜 */
+/* 通用滑块（人机验证闸 / 邮箱门槛共用），拖到最右触发 onPass */
+function makeSlider(root,onPass){
+  var knob=root.querySelector('.slider-knob'),fill=root.querySelector('.slider-fill'),text=root.querySelector('.slider-text');
+  if(!knob)return null;
+  function range(){return Math.max(0,root.clientWidth-knob.offsetWidth-8);}
+  function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
+  var drag=false;
+  knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
+  window.addEventListener('pointermove',function(e){if(!drag)return;var r=root.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);},{passive:true});
+  window.addEventListener('pointerup',function(){if(!drag)return;drag=false;
+    if(parseFloat(knob.style.left||'0')>=range()*0.96){setX(range());if(text)text.textContent='验证通过 ✓';knob.querySelector('span').textContent='✓';setTimeout(onPass,400);}
+    else setX(0);});
+  return {reset:function(){setX(0);}};
+}
+
+/* 手机预览：指针 + 陀螺仪 视差倾斜（rAF 节流，transform 合成无重排） */
 (function(){
   var dev=document.getElementById('device');if(!dev)return;
   function setTilt(rx,ry){dev.style.setProperty('--rx',rx.toFixed(2)+'deg');dev.style.setProperty('--ry',ry.toFixed(2)+'deg');}
-  var stage=dev.parentElement;
+  var stage=dev.parentElement,pr=0,pnx=0,pny=0;
   stage.addEventListener('pointermove',function(e){var r=stage.getBoundingClientRect();
-    var nx=(e.clientX-r.left)/r.width-0.5, ny=(e.clientY-r.top)/r.height-0.5;
-    setTilt(4-ny*10, -7+nx*14);});
+    pnx=(e.clientX-r.left)/r.width-0.5; pny=(e.clientY-r.top)/r.height-0.5;
+    if(!pr){pr=requestAnimationFrame(function(){pr=0;setTilt(4-pny*10,-7+pnx*14);});}},{passive:true});
   stage.addEventListener('pointerleave',function(){setTilt(4,-7);});
   function onTilt(e){var b=(e.gamma||0), a=(e.beta||0);
     setTilt(4+Math.max(-12,Math.min(12,a*0.12)), -7+Math.max(-14,Math.min(14,b*0.18)));}
@@ -54,32 +65,21 @@ document.getElementById('ghStar').href=GH_BASE;
 /* 人机验证闸：异常访问时弹出，滑动即过（无需答题） */
 (function(){
   var gate=document.getElementById('gate');
-  var knob=document.getElementById('sliderKnob');
-  var fill=document.getElementById('sliderFill');
-  var text=document.getElementById('sliderText');
   var slider=document.getElementById('slider');
-  if(!gate||!knob)return;
+  if(!gate||!slider||!slider.querySelector('.slider-knob'))return;
   var VERIFY_KEY='mox_verified';
-  function range(){return Math.max(0, slider.clientWidth - knob.offsetWidth - 8);}
-  function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
+  function show(){document.body.classList.add('locked');gate.classList.add('on');gate.setAttribute('aria-hidden','false');}
+  function hide(){document.body.classList.remove('locked');gate.classList.remove('on');gate.setAttribute('aria-hidden','true');
+    try{sessionStorage.setItem(VERIFY_KEY,'1');}catch(e){}}
+  var verified=false;try{verified=sessionStorage.getItem(VERIFY_KEY)==='1';}catch(e){}
   // 仅把"确定性机器人信号"判为异常：navigator.webdriver（无头/自动化）或明显爬虫 UA。
-  // 普通浏览器（含隐私模式、移动端）绝不会被误判 → 导航与下载永远可用，永不误锁真人。
   function risk(){var s=0;
     if(navigator.webdriver===true)s+=10;
     var ua=(navigator.userAgent||'').toLowerCase();
     if(/headless|phantomjs|scrapy|python-requests|go-http|java\/|curl\/|wget|okhttp|bot\b|spider|crawl/i.test(ua))s+=10;
     return s;}
-  function show(){document.body.classList.add('locked');gate.classList.add('on');gate.setAttribute('aria-hidden','false');}
-  function hide(){document.body.classList.remove('locked');gate.classList.remove('on');gate.setAttribute('aria-hidden','true');
-    try{sessionStorage.setItem(VERIFY_KEY,'1');}catch(e){}}
-  var verified=false;try{verified=sessionStorage.getItem(VERIFY_KEY)==='1';}catch(e){}
   if(!verified && (risk()>0 || /[?&]verify=1/.test(location.search))){show();}
-  var drag=false;
-  knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
-  window.addEventListener('pointermove',function(e){if(!drag)return;var r=slider.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);});
-  window.addEventListener('pointerup',function(){if(!drag)return;drag=false;
-    if(parseFloat(knob.style.left||'0')>=range()*0.96){setX(range());text.textContent='验证通过 ✓';knob.querySelector('span').textContent='✓';setTimeout(hide,650);}
-    else{setX(0);}});
+  makeSlider(slider,hide);
   var why=document.getElementById('gateWhy');
   if(why)why.addEventListener('click',function(e){e.preventDefault();
     document.getElementById('gateMsg').textContent='为避免脚本批量抓取与滥用，异常流量需先证明你是真人。过程仅一次，完成后本次会话不再弹出。';});
@@ -93,17 +93,48 @@ document.getElementById('ghStar').href=GH_BASE;
   var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
   els.forEach(function(e){io.observe(e);});})();
 
+/* ===== 联系方式：邮箱过验证门，QQ 登记来历 ===== */
+(function(){
+  /* 邮箱：内联滑块人机验证，本会话验证一次后直显 */
+  var mailVal=document.getElementById('mailVal'),mailSlider=document.getElementById('mailSlider'),
+      mailCopy=document.getElementById('mailCopyBtn');
+  if(mailSlider){
+    var mailShown=false;
+    function showMail(){if(mailShown)return;mailShown=true;
+      mailVal.textContent=_d(_MA);mailSlider.style.display='none';
+      if(mailCopy)mailCopy.style.display='';}
+    try{if(sessionStorage.getItem('mox_mail_ok')==='1')showMail();}catch(e){}
+    makeSlider(mailSlider,function(){try{sessionStorage.setItem('mox_mail_ok','1');}catch(e){}showMail();});
+  }
+  /* QQ：先详细登记来历 + 用途，通过后显示并生成申请说明（添加好友时粘贴） */
+  var qqVal=document.getElementById('qqVal'),askBtn=document.getElementById('qqAskBtn'),
+      form=document.getElementById('qqForm'),fromEl=document.getElementById('qqFrom'),
+      whyEl=document.getElementById('qqWhy'),submitBtn=document.getElementById('qqSubmitBtn'),
+      done=document.getElementById('qqDone'),brief=document.getElementById('qqBrief');
+  if(!askBtn)return;
+  function pass(fr,wk){
+    qqVal.textContent=_d(_QA);form.style.display='none';done.style.display='';
+    brief.textContent='我是'+fr+'，想'+wk+'。（来自 MoX 官网）';
+    showToast('已生成申请说明，复制后添加即可');
+  }
+  askBtn.addEventListener('click',function(){askBtn.style.display='none';form.style.display='';
+    try{var s=JSON.parse(sessionStorage.getItem('mox_qq_info')||'null');
+      if(s){fromEl.value=s.f;whyEl.value=s.w;}}catch(e){}
+    if(fromEl)fromEl.focus();});
+  submitBtn.addEventListener('click',function(){
+    var fr=(fromEl.value||'').trim(),wk=(whyEl.value||'').trim();
+    if(fr.length<12){showToast('来历请写详细一点（不少于 12 字）');fromEl.focus();return;}
+    if(wk.length<6){showToast('想说清楚你想做什么（不少于 6 字）');whyEl.focus();return;}
+    try{sessionStorage.setItem('mox_qq_info',JSON.stringify({f:fr,w:wk}));}catch(e){}
+    pass(fr,wk);
+  });
+})();
+
 /* ===== 登录 / 用户态（对接 mox-id 后端）===== */
 (function(){
-  /* 登录链路统一走 pages.dev 边缘反代，绝不让浏览器直连 workers.dev
-     （*.workers.dev 在部分地区含中国大陆不可达，直连=点登录没反应）：
-     - 在 *.pages.dev 上：同域 Functions 反代（LOGIN_API=''）
-     - 其他域名（github.io 镜像、本地开发、未来自定义域）：跨域走
-       https://mox-site.pages.dev 反代——CORS 全开且 Function 应答 preflight，
-       fetch 带 Authorization / content-type 均可用
-     OAuth 回跳闭环：任意域打开弹窗 → pages.dev/auth/github/start(302→GitHub)
-     → callback(pages.dev) → 302 回 redirect 参数指定的原页面 ?token=...
-     → 页面把 token 存进本域 localStorage */
+  /* 登录链路统一走 pages.dev 边缘反代，绝不让浏览器直连 workers.dev。
+     登录/登出全部无刷新完成：renderUser / renderLogin 直接切换导航、
+     CTA 与弹窗三处 UI，绝不 location.reload 白屏等待。 */
   var PAGES_ORIGIN = 'https://mox-site.pages.dev';
   var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : PAGES_ORIGIN;
   var slot=document.getElementById('authSlot');
@@ -114,38 +145,36 @@ document.getElementById('ghStar').href=GH_BASE;
   var cta=document.getElementById('loginCta');
   var currentUser=null; /* null = 未登录；登录后驱动导航/CTA/弹窗三处 UI 同步 */
   var adminHref='';     /* 管理后台秘径，仅 /me 下发给管理员本人 */
+  var probeState='';    /* ''未知 on在线 off离线 —— 在线后不再重复探测 */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
 
-  // OAuth 回跳带 ?token= 时存下并清 URL
+  // OAuth 回跳带 ?token= 时存下并清 URL（replaceState 无感，不刷新）
   (function(){var u=new URL(location.href);var t=u.searchParams.get('token');
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
 
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
 
-  /* 后端可达性探测：决定状态点；任意域名都走 pages.dev 反代（不再直连 workers.dev）。
-     必须校验响应是 JSON——反代失灵时 /me 会落到静态站 fallback 返回 HTML（200），
-     不设防就会误报「在线」，正是此前「登过后还能再登」被掩盖的原因之一 */
-  function probeBackend(){
+  /* 后端可达性探测（JSON 守卫 + 结果缓存）：HTML fallback 不再误报在线 */
+  function probeBackend(force){
+    if(probeState==='on'&&!force)return;
     fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
       .then(function(r){
         if((r.headers.get('content-type')||'').indexOf('json')<0)throw new Error('not_json');
-        setStatus('on','登录服务在线');
+        probeState='on';setStatus('on','登录服务在线');
       })
       .catch(function(){
-        setStatus('off','登录服务暂时不可达');
+        probeState='off';setStatus('off','登录服务暂时不可达');
         if(hintEl)hintEl.innerHTML='登录服务暂时连不上（网络限制或后端维护）。请稍后重试，或改用主站：<a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
       });
   }
 
   /* ===== 登录态 UI：导航 slot + 账号区 CTA + 弹窗，三处同步 ===== */
-
   function renderUser(u){
     currentUser=u;
     if(cta)cta.textContent='已登录 · '+(u.name||u.login||'用户');
-    /* 安全 DOM 构建：不拼 HTML，杜绝 XSS；头像加载失败隐藏 */
     slot.textContent='';
     var img=document.createElement('img');img.className='av';img.alt='';
     if(u.avatar_url)img.src=u.avatar_url;
@@ -155,8 +184,6 @@ document.getElementById('ghStar').href=GH_BASE;
     slot.appendChild(img);slot.appendChild(out);
   }
   function renderAdmin(path){
-    /* 管理后台走秘径，地址只由 /me 下发给管理员本人，公开页面不含该路径。
-       链接走 LOGIN_API（pages.dev 反代），任意前端域名都能打开 */
     adminHref=LOGIN_API+path;
     var a=document.createElement('a');a.href=adminHref;a.textContent='管理后台';
     slot.insertBefore(a,slot.firstChild);
@@ -169,8 +196,8 @@ document.getElementById('ghStar').href=GH_BASE;
     if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
   }
 
-  /* 退出：必须同时撤销服务端会话——OAuth 回调种下的 mox_sid Cookie 有效期 30 天，
-     只删本地 token 的话，刷新后 /me 会回退用 Cookie 鉴权，「退出」形同虚设 */
+  /* 退出：POST /auth/logout 撤销 mox_sid 服务端会话（30 天 Cookie），再清本地 token。
+     无刷新：renderLogin 直接切回未登录态，toast 即时反馈 */
   function doLogout(){
     var t=getTok();
     try{
@@ -178,7 +205,9 @@ document.getElementById('ghStar').href=GH_BASE;
         headers:t?{'Authorization':'Bearer '+t}:{}}).catch(function(){});
     }catch(e){}
     delTok();
-    location.reload();
+    mask.classList.remove('show');
+    renderLogin();
+    showToast('已退出登录');
   }
 
   function openLogin(){
@@ -204,15 +233,20 @@ document.getElementById('ghStar').href=GH_BASE;
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
     probeBackend();
   }
-  // 导航「登录」与账号区「登录 MoX 账号」都打开弹窗（已登录则展示账号态）
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
 
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
   var meCloseBtn=document.getElementById('meCloseBtn');
   if(meCloseBtn)meCloseBtn.addEventListener('click',function(){mask.classList.remove('show');});
   var meLogoutBtn=document.getElementById('meLogoutBtn');
-  if(meLogoutBtn)meLogoutBtn.addEventListener('click',function(){mask.classList.remove('show');doLogout();});
+  if(meLogoutBtn)meLogoutBtn.addEventListener('click',doLogout);
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
+  /* GitHub 按钮即时反馈：点击立刻有响应，不等网络 */
+  var ghBtn=document.getElementById('ghLoginBtn');
+  if(ghBtn){
+    ghBtn.addEventListener('click',function(){ghBtn.classList.add('busy');ghBtn.textContent='正在打开 GitHub…';});
+    window.addEventListener('pageshow',function(ev){if(ev.persisted){ghBtn.classList.remove('busy');ghBtn.textContent='使用 GitHub 登录';}});
+  }
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;
     var m=document.getElementById('loginMsg');m.className='msg';m.textContent='登录中…';
@@ -220,8 +254,14 @@ document.getElementById('ghStar').href=GH_BASE;
       .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
       .then(function(x){
         if(!x.ok){m.className='msg err';m.textContent='失败：'+(x.d.error||'未知');return;}
-        /* 普通 GitHub 用户与管理员都能登录；仅管理员会额外出现「管理后台」入口 */
-        setTok(t);mask.classList.remove('show');location.reload();
+        /* 无刷新登录：直接切登录态 + toast；管理入口异步补齐（/me 才下发秘径） */
+        setTok(t);mask.classList.remove('show');
+        renderUser(x.d.user);
+        showToast('登录成功 · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'欢迎'));
+        fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
+          .then(function(r){return r.ok?r.json():null;})
+          .then(function(d){if(d&&d.admin_path)renderAdmin(d.admin_path);})
+          .catch(function(){});
       }).catch(function(){m.className='msg err';m.textContent='网络错误，请确认能访问后端。';});
   });
 
@@ -255,7 +295,6 @@ document.getElementById('ghStar').href=GH_BASE;
 document.querySelectorAll('[data-act]').forEach(function(el){
   el.addEventListener('click',function(){
     var a=el.getAttribute('data-act');
-    if(a==='revealContact')revealContact();
-    else if(a==='copy')copyVal(el.getAttribute('data-target'));
+    if(a==='copy')copyVal(el.getAttribute('data-target'));
   });
 });
