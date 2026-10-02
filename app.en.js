@@ -79,12 +79,18 @@ document.getElementById('ghStar').href=GH_BASE;
 
 /* ===== 登录 / 用户态（对接 mox-id 后端）===== */
 (function(){
-  var API='https://mox-id.3042980037.workers.dev';
-  /* Login route is chosen by the deploy domain:
-     - Cloudflare Pages (*.pages.dev) has edge functions → same-origin proxy (LOGIN_API='')
-     - GitHub Pages (github.io) etc. have no edge functions → talk to the workers.dev backend directly
-     One source on main → both pages.dev and github.io update automatically and can log in */
-  var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : API;
+  /* All sign-in traffic goes through the pages.dev edge proxy — never let the
+     browser hit workers.dev directly (*.workers.dev is unreachable on some
+     networks incl. mainland China → clicking "Sign in" would do nothing):
+     - on *.pages.dev: same-origin Functions proxy (LOGIN_API='')
+     - elsewhere (github.io mirror, local dev, future custom domains):
+       cross-origin via https://mox-site.pages.dev — CORS wide open and the
+       Function answers preflights, so fetches with Authorization work too
+     OAuth round trip: any domain → pages.dev/auth/github/start (302 → GitHub)
+     → callback (on pages.dev) → 302 back to the redirect page ?token=...
+     → that page stores the token in its own localStorage */
+  var PAGES_ORIGIN = 'https://mox-site.pages.dev';
+  var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : PAGES_ORIGIN;
   var slot=document.getElementById('authSlot');
   var mask=document.getElementById('loginMask');
   var statusEl=document.getElementById('loginStatus');
@@ -97,18 +103,14 @@ document.getElementById('ghStar').href=GH_BASE;
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
 
-  /* Backend reachability probe: drives the status dot; on github.io unreachable, point to primary site */
+  /* Backend reachability probe: drives the status dot; every domain goes through the pages.dev proxy */
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
   function probeBackend(){
     fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
       .then(function(r){ setStatus('on','Sign-in service online'); })
       .catch(function(){
-        if(location.hostname.endsWith('.github.io')){
-          setStatus('off','Sign-in service unreachable on this domain');
-          if(hintEl)hintEl.innerHTML='Current domain (github.io) may be network-limited. Use the primary site: <a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
-        } else {
-          setStatus('warn','Sign-in service temporarily unreachable, retry later');
-        }
+        setStatus('off','Sign-in service temporarily unreachable');
+        if(hintEl)hintEl.innerHTML='Cannot reach the sign-in service right now (network restrictions or maintenance). Retry later, or use the primary site: <a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
       });
   }
 
@@ -124,7 +126,7 @@ document.getElementById('ghStar').href=GH_BASE;
   }
   function renderAdmin(path){
     /* Admin console lives on a secret path; the address is only delivered to admins via /me.
-       Link goes through LOGIN_API: proxied on pages.dev, direct to backend on github.io */
+       Link goes through LOGIN_API (the pages.dev proxy), so it opens from any frontend domain */
     var a=document.createElement('a');a.href=LOGIN_API+path;a.textContent='Console';
     slot.insertBefore(a,slot.firstChild);
   }
