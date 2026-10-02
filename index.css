@@ -30,40 +30,44 @@
       radial-gradient(56rem 46rem at 105% 8%, rgba(129,140,248,.10), transparent 55%),
       radial-gradient(50rem 50rem at 50% 115%, rgba(129,140,248,.05), transparent 55%);
   }
-  /* 缓慢漂移的低饱和光晕 */
+  /* 缓慢漂移的低饱和光晕（transform 合成动画，blur 已降档） */
   body::after{
-    content:"";position:fixed;inset:-25%;z-index:-3;pointer-events:none;filter:blur(60px);opacity:.5;
+    content:"";position:fixed;inset:-25%;z-index:-3;pointer-events:none;filter:blur(44px);opacity:.5;
     background:radial-gradient(28rem 28rem at 25% 35%, rgba(129,140,248,.16), transparent 60%),
                radial-gradient(26rem 26rem at 78% 62%, rgba(94,234,212,.12), transparent 60%);
-    animation:drift 32s ease-in-out infinite alternate;
+    animation:drift 32s ease-in-out infinite alternate;will-change:transform;
   }
   @keyframes drift{0%{transform:translate3d(-2%,-1%,0) scale(1.05)}100%{transform:translate3d(3%,2%,0) scale(1.1)}}
 
+  /* 屏外区块整段跳过渲染（滚动进视口才绘制），长页顺滑的关键 */
+  section{content-visibility:auto;contain-intrinsic-size:auto 760px}
+
   /* ===== 玻璃基底（iOS 液态玻璃） ===== */
   .glass{position:relative;isolation:isolate;
-    /* 移动高光（沿对角线缓慢扫过）+ 底色 */
+    /* 静态对角高光 + 底色：不再做 background-position 无限动画（持续重绘是滚动卡顿主因） */
     background:
-      linear-gradient(115deg, transparent 32%, rgba(255,255,255,.07) 50%, transparent 68%),
+      linear-gradient(115deg, transparent 34%, rgba(255,255,255,.07) 52%, transparent 70%),
       var(--glass);
     background-size:260% 260%, auto;
-    background-position:130% 0, 0 0;
-    animation:sheen 7.5s ease-in-out infinite;
+    background-position:62% 0, 0 0;
     border:1px solid var(--stroke);border-radius:var(--radius);
-    backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%);
+    backdrop-filter:blur(15px) saturate(160%);-webkit-backdrop-filter:blur(15px) saturate(160%);
     box-shadow:0 22px 55px -26px rgba(0,0,0,.72),
       inset 0 1px 0 rgba(255,255,255,.22),
       inset 0 0 0 1px rgba(255,255,255,.05);
     overflow:hidden;}
-  @keyframes sheen{0%{background-position:130% 0,0 0}50%{background-position:-30% 0,0 0}100%{background-position:130% 0,0 0}}
   /* 顶部高光反射（真玻璃最关键特征） */
   .glass::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:inherit;
     background:linear-gradient(160deg, rgba(255,255,255,.26), rgba(255,255,255,0) 30%, rgba(255,255,255,0) 72%, rgba(255,255,255,.05));
     mix-blend-mode:screen;opacity:.75;}
-  /* 指针光斑（液态反光） */
+  /* 指针光斑（液态反光）：固定渐变层用 transform 跟随指针，变量更新只触发合成 */
   .glass::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:inherit;
-    background:radial-gradient(20rem 20rem at var(--mx) var(--my), rgba(255,255,255,.10), transparent 55%);
-    opacity:0;transition:opacity .5s;mix-blend-mode:screen;}
+    background:radial-gradient(20rem 20rem at center, rgba(255,255,255,.10), transparent 55%);
+    opacity:0;transition:opacity .5s;mix-blend-mode:screen;
+    transform:translate3d(calc(var(--mx,50%) - 50%), calc(var(--my,50%) - 50%), 0);will-change:transform;}
   .glass:hover::after{opacity:1}
+  /* 低端/小屏降耗：玻璃减薄 */
+  @media (max-width:640px){.glass{backdrop-filter:blur(10px) saturate(150%);-webkit-backdrop-filter:blur(10px) saturate(150%)}}
 
   .wrap{width:min(1080px,90vw);margin:0 auto}
   nav{position:sticky;top:16px;z-index:50;width:min(1080px,90vw);margin:16px auto 0;
@@ -235,3 +239,21 @@
   .lb b{color:var(--text);font-weight:650}
   .login-hint{font-size:12px;color:#ffb38a;margin-top:8px;line-height:1.6;text-align:left}
   .login-hint a{color:#ffd0a8;text-decoration:underline}
+  /* GitHub 按钮点击即时反馈（跳转前 0 等待感） */
+  .modal a.gh.busy{opacity:.65;pointer-events:none}
+
+  /* ===== 联系门槛组件（邮箱滑块 / QQ 登记表单） ===== */
+  .slider.mini{height:44px;margin-top:12px}
+  .slider.mini .slider-knob{width:38px;height:38px;font-size:16px}
+  .slider.mini .slider-text{font-size:12.5px}
+  .contact textarea{width:100%;min-height:56px;resize:vertical;border-radius:11px;border:1px solid var(--stroke-hi);
+    background:rgba(255,255,255,.05);color:var(--text);padding:9px 11px;font:inherit;font-size:13px;
+    margin-bottom:9px;box-sizing:border-box}
+  .contact textarea::placeholder{color:var(--faint)}
+  .contact textarea:focus{outline:1px solid rgba(129,140,248,.55)}
+  .contact .btn{margin-top:6px}
+  .qq-note{font-size:12px;color:var(--dim);margin:8px 0 6px;text-align:left}
+  .qq-brief{font-size:13px;line-height:1.7;background:rgba(255,255,255,.04);border:1px solid var(--stroke);
+    border-radius:11px;padding:10px 12px;text-align:left;word-break:break-all}
+  .citem{max-width:100%}
+  .citem .val{min-height:24px}
