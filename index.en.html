@@ -7,6 +7,11 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="description" content="The MoX family — moxsh liquid-glass terminal, moxwebgpu WebGPU compute framework, mox-id unified identity backend. Desktop-grade tools in your pocket; compute pushed to your device.">
 <meta name="color-scheme" content="dark">
+<!-- Warm up cross-origin connections: faster GitHub OAuth hop, zero-lag avatars -->
+<link rel="preconnect" href="https://github.com" crossorigin>
+<link rel="dns-prefetch" href="https://github.com">
+<link rel="preconnect" href="https://avatars.githubusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-site.pages.dev https://mox-id.3042980037.workers.dev; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="index.en.css">
@@ -212,18 +217,33 @@
 <section id="contact" class="wrap">
   <div class="glass contact fadeup">
     <div class="sec-title" style="font-size:26px">Contact us</div>
-    <p>Feedback, collaboration, or getting an APK — just reach us. Contacts are hidden by default; tap to reveal.</p>
-    <button class="btn primary" data-act="revealContact">Show contacts</button>
-    <div id="contactCards">
+    <p>Feedback, collaboration, or getting an APK — just reach us. Each channel has a light gate to filter noise.</p>
+    <div id="contactCards" class="show">
       <div class="citem glass">
-        <div class="label">QQ</div>
-        <div class="val" id="qqVal"></div>
-        <button class="btn copy" data-act="copy" data-target="qqVal">Copy</button>
+        <div class="label">Email · human verification required</div>
+        <div class="val" id="mailVal">••••••••••@163.com</div>
+        <div class="slider mini" id="mailSlider" aria-label="Slide to verify and reveal email">
+          <div class="slider-fill" id="mailFill"></div>
+          <div class="slider-text" id="mailText">Hold &amp; slide right · reveal email</div>
+          <div class="slider-knob" id="mailKnob" role="slider" aria-label="Slide to verify"><span>›</span></div>
+        </div>
+        <button class="btn copy" id="mailCopyBtn" data-act="copy" data-target="mailVal" style="display:none">Copy email</button>
       </div>
       <div class="citem glass">
-        <div class="label">Email</div>
-        <div class="val" id="mailVal"></div>
-        <button class="btn copy" data-act="copy" data-target="mailVal">Copy</button>
+        <div class="label">QQ · state who you are &amp; why</div>
+        <div class="val" id="qqVal">••••••••••</div>
+        <button class="btn" id="qqAskBtn">Request QQ</button>
+        <div id="qqForm" style="display:none">
+          <textarea id="qqFrom" placeholder="Who you are: where did you find MoX, what you do… (at least 12 chars)" maxlength="200"></textarea>
+          <textarea id="qqWhy" placeholder="What you want: what you'd like to talk about or need help with… (at least 6 chars)" maxlength="200"></textarea>
+          <button class="btn primary" id="qqSubmitBtn">Submit &amp; show QQ</button>
+        </div>
+        <div id="qqDone" style="display:none">
+          <div class="qq-note">Paste this request note when adding (generated from your input):</div>
+          <div class="qq-brief" id="qqBrief"></div>
+          <button class="btn copy" id="qqBriefCopyBtn" data-act="copy" data-target="qqBrief">Copy request note</button>
+          <button class="btn copy" id="qqCopyBtn" data-act="copy" data-target="qqVal">Copy QQ number</button>
+        </div>
       </div>
     </div>
   </div>

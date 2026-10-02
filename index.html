@@ -7,6 +7,11 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta name="description" content="MoX 系列 —— moxsh 液态玻璃终端、moxwebgpu WebGPU 计算框架、mox-id 统一身份后端。把桌面级工具搬进掌心，算力下推到你的设备。">
 <meta name="color-scheme" content="dark">
+<!-- 预热外域连接：GitHub 授权页跳出更快，头像加载零延迟 -->
+<link rel="preconnect" href="https://github.com" crossorigin>
+<link rel="dns-prefetch" href="https://github.com">
+<link rel="preconnect" href="https://avatars.githubusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-site.pages.dev https://mox-id.3042980037.workers.dev; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="index.css">
@@ -216,18 +221,33 @@
 <section id="contact" class="wrap">
   <div class="glass contact fadeup">
     <div class="sec-title" style="font-size:26px">联系我们</div>
-    <p>产品反馈、共建合作、获取安装包，都可以直接找到我们。联系方式默认隐藏，点一下即可查看。</p>
-    <button class="btn primary" data-act="revealContact">显示联系方式</button>
-    <div id="contactCards">
+    <p>产品反馈、共建合作、获取安装包，都可以直接找到我们。为过滤打扰，两种方式各有一道轻门槛。</p>
+    <div id="contactCards" class="show">
       <div class="citem glass">
-        <div class="label">QQ</div>
-        <div class="val" id="qqVal"></div>
-        <button class="btn copy" data-act="copy" data-target="qqVal">复制</button>
+        <div class="label">邮箱 · 需过人机验证</div>
+        <div class="val" id="mailVal">••••••••••@163.com</div>
+        <div class="slider mini" id="mailSlider" aria-label="滑动验证后显示邮箱">
+          <div class="slider-fill" id="mailFill"></div>
+          <div class="slider-text" id="mailText">按住滑块拖到最右 · 显示邮箱</div>
+          <div class="slider-knob" id="mailKnob" role="slider" aria-label="滑动完成验证"><span>›</span></div>
+        </div>
+        <button class="btn copy" id="mailCopyBtn" data-act="copy" data-target="mailVal" style="display:none">复制邮箱</button>
       </div>
       <div class="citem glass">
-        <div class="label">邮箱</div>
-        <div class="val" id="mailVal"></div>
-        <button class="btn copy" data-act="copy" data-target="mailVal">复制</button>
+        <div class="label">QQ · 需登记来历与用途</div>
+        <div class="val" id="qqVal">••••••••••</div>
+        <button class="btn" id="qqAskBtn">申请查看 QQ</button>
+        <div id="qqForm" style="display:none">
+          <textarea id="qqFrom" placeholder="你的详细来历：从哪里认识 MoX？你是谁、做什么的？（不少于 12 字）" maxlength="200"></textarea>
+          <textarea id="qqWhy" placeholder="想做什么：加上之后打算聊什么、需要什么帮助？（不少于 6 字）" maxlength="200"></textarea>
+          <button class="btn primary" id="qqSubmitBtn">提交并显示 QQ</button>
+        </div>
+        <div id="qqDone" style="display:none">
+          <div class="qq-note">添加好友时请粘贴这段申请说明（已按你的填写生成）：</div>
+          <div class="qq-brief" id="qqBrief"></div>
+          <button class="btn copy" id="qqBriefCopyBtn" data-act="copy" data-target="qqBrief">复制申请说明</button>
+          <button class="btn copy" id="qqCopyBtn" data-act="copy" data-target="qqVal">复制 QQ 号</button>
+        </div>
       </div>
     </div>
   </div>
