@@ -263,12 +263,22 @@
       <div class="lb"><span class="lbi">🛡️</span><div><b>Admins</b>: an "Admin console" entry appears after sign-in — for membership, billing, content.</div></div>
       <div class="lb"><span class="lbi">🔒</span><div><b>Security</b>: sign in with GitHub; credentials stay local; cloud-sync data is client-encrypted.</div></div>
     </div>
-    <a class="gh" id="ghLoginBtn" href="#">Sign in with GitHub</a>
-    <div class="or">or</div>
-    <input id="tokInput" type="password" placeholder="Paste a GitHub Token (ghp_ / github_pat_)" autocomplete="off" />
-    <div class="row">
-      <button id="tokLoginBtn" class="primary">Sign in</button>
-      <button id="tokCancelBtn">Cancel</button>
+    <div id="loginBox">
+      <a class="gh" id="ghLoginBtn" href="#">Sign in with GitHub</a>
+      <div class="or">or</div>
+      <input id="tokInput" type="password" placeholder="Paste a GitHub Token (ghp_ / github_pat_)" autocomplete="off" />
+      <div class="row">
+        <button id="tokLoginBtn" class="primary">Sign in</button>
+        <button id="tokCancelBtn">Cancel</button>
+      </div>
+    </div>
+    <div id="loggedInBox" style="display:none">
+      <div class="lb"><span class="lbi">✅</span><div>Signed in as <b id="meName"></b>. Credentials stay in this browser; sign out anytime.</div></div>
+      <div class="row">
+        <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">Open admin console</a>
+        <button id="meLogoutBtn" class="primary">Sign out</button>
+        <button id="meCloseBtn">Close</button>
+      </div>
     </div>
     <div class="msg" id="loginMsg"></div>
     <div class="login-hint" id="loginHint"></div>
