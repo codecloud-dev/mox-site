@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>moxsh · 掌心的液态玻璃终端</title>
+<title>MoX · 一个独立开发者的工具宇宙</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="description" content="moxsh —— 跑在 Android 上的液态玻璃终端。Rust 自研内核，全面兼容 Termux 生态，无需 root、装上即用。">
+<meta name="description" content="MoX 系列 —— moxsh 液态玻璃终端、moxwebgpu WebGPU 计算框架、mox-id 统一身份后端。把桌面级工具搬进掌心，算力下推到你的设备。">
 <meta name="color-scheme" content="dark">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-id.3042980037.workers.dev; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -13,13 +13,14 @@
 </head>
 <body>
 <nav class="glass">
-  <div class="brand"><span class="mark"></span><span>moxsh</span></div>
+  <div class="brand"><span class="mark"></span><span>MoX</span></div>
   <div class="links">
-    <a href="#features">特性</a>
+    <a href="#products">产品</a>
+    <a href="#features">moxsh 特性</a>
     <a href="experience.html">在线体验</a>
+    <a href="#account">云同步 / 账号</a>
     <a href="#download">下载</a>
     <a href="#plans">规划</a>
-    <a href="#support">支持</a>
     <a href="#contact">联系</a>
     <a class="lang" href="index.en.html">EN</a>
     <span id="authSlot"></span>
@@ -27,14 +28,14 @@
 </nav>
 
 <header class="wrap">
-  <span class="eyebrow"><span class="dot"></span>Android · 液态玻璃终端</span>
-  <h1>掌心的 Linux，<br><span class="em">重新设计过</span>。</h1>
-  <p class="sub">moxsh 是跑在 Android 上的终端：Rust 自研内核，全面兼容 Termux 生态。无需 root、无需配置，装上即用。</p>
+  <span class="eyebrow"><span class="dot"></span>MoX 系列 · 独立开发者的工具宇宙</span>
+  <h1>把桌面级能力，<br><span class="em">装进你的掌心</span>。</h1>
+  <p class="sub">MoX 是一组独立打造的工具：液态玻璃终端、WebGPU 计算框架、统一身份与云同步后端……它们共享同一套账号与云同步，把算力下推到你的设备，而不是搬去云端。</p>
 
   <div class="hero-cta">
-    <a class="btn primary" href="#download">获取 moxsh</a>
-    <a class="btn" href="experience.html">在线体验 ↑</a>
-    <a class="btn" href="#features">看看它强在哪</a>
+    <a class="btn primary" href="#products">看看 MoX 全家桶</a>
+    <a class="btn" href="#download">获取 moxsh</a>
+    <a class="btn" href="#account">统一账号怎么用</a>
   </div>
 
   <div class="stage">
@@ -55,10 +56,49 @@
   </div>
 </header>
 
+<!-- ===== 产品矩阵 ===== -->
+<section id="products" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">MoX 全家桶</div>
+    <p class="sec-desc">同一个账号、同一套云同步，把不同场景的工具串起来。已上线的直接可用，规划中的是接下来的方向。</p>
+  </div>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <span class="status on">✅ 已上线</span>
+      <h3>moxsh</h3>
+      <p>跑在 Android 上的液态玻璃终端。Rust 自研内核，全面兼容 Termux 生态，无需 root、装上即用。</p>
+      <a class="more" href="#features">看它强在哪 ↓</a>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status on">✅ 已上线</span>
+      <h3>mox-id</h3>
+      <p>MoX 的统一身份与账户底座：任意 GitHub 用户一键登录，云同步、会员、计费、管理后台都从这里走。</p>
+      <a class="more" href="#account">账号与云同步 ↓</a>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status dev">✅ 已开源 · 制作中</span>
+      <h3>moxwebgpu</h3>
+      <p>零依赖的 WebGPU 通用计算（GPGPU）框架：类型化张量、原始 WGSL Kernel、惰性计算图。算力下推到访客浏览器的 GPU。</p>
+      <a class="more" href="https://codecloud-dev.github.io/moxwebgpu/" target="_blank" rel="noopener">看实时演示 →</a>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status plan">规划中 · 待定</span>
+      <h3>moxbox</h3>
+      <p>文件管理与系统套件：把手机存储、进程、网络都装进同一套玻璃界面。</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status plan">规划中 · 待定</span>
+      <h3>moxcode</h3>
+      <p>移动端轻量 IDE：终端 + 编辑器 + 运行预览一体，掌心里写代码。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== moxsh 特性（旗舰产品深讲） ===== -->
 <section id="features" class="wrap">
   <div class="sec-head fadeup">
     <div class="sec-title">为「快」与「美」造的终端</div>
-    <p class="sec-desc">内核用 Rust 重写，界面用液态玻璃重绘。每一项体验，都从底层重新考虑过。</p>
+    <p class="sec-desc">moxsh 是 MoX 的旗舰产品：内核用 Rust 重写，界面用液态玻璃重绘。每一项体验，都从底层重新考虑过。</p>
   </div>
   <div class="grid">
     <div class="card glass fadeup">
@@ -94,10 +134,41 @@
   </div>
 </section>
 
+<!-- ===== 统一账号 / 云同步 ===== -->
+<section id="account" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">一个 MoX 账号，串起所有设备</div>
+    <p class="sec-desc">所有 MoX 产品共用同一套身份（由 <b>mox-id</b> 后端提供）。登录后，普通用户和管理员各取所需。</p>
+  </div>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <h3>普通用户 · 云同步</h3>
+      <p>多设备配置、命令历史实时同步；AI 助手额度跨设备共享。任意 GitHub 用户都能登录，免费起步。</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <h3>管理员 · 管理后台</h3>
+      <p>登录后自动出现「管理后台」入口，用于会员档位、计费对账、内容管理与运营数据。入口是秘径，只下发给管理员本人。</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <h3>安全说明</h3>
+      <p>通过 GitHub 登录，凭证仅存本地；云同步内容在客户端加密后才上传，服务端看不到明文。支持一键退出。</p>
+    </div>
+  </div>
+  <div class="glass support fadeup" style="margin-top:22px">
+    <div class="sec-title" style="font-size:24px">想先试试？</div>
+    <p class="sec-desc">点右上角「登录」即可用 GitHub 账号进入。普通用户直接享受云同步，管理员会看到专属后台入口。</p>
+    <a class="btn primary" id="loginCta" href="#">登录 MoX 账号</a>
+  </div>
+</section>
+
+<!-- ===== 规划 ===== -->
 <section id="plans" class="wrap">
   <div class="sec-head fadeup">
     <div class="sec-title">未来规划 · 待定</div>
-    <p class="sec-desc">moxsh 之后，我们想沿着「把桌面级工具搬进掌心」继续探索。下面只是<b>可能的方向</b>——<b>可能做，也可能永远不做</b>，一切以实际发布为准。</p>
+    <p class="sec-desc">moxsh / mox-id / moxwebgpu 之后，我们想沿着「把桌面级工具搬进掌心」继续探索。下面只是<b>可能的方向</b>——<b>可能做，也可能永远不做</b>，一切以实际发布为准。</p>
   </div>
   <div class="plans">
     <div class="plan fadeup">
@@ -111,12 +182,6 @@
       <h3>moxcode</h3>
       <p>移动端轻量 IDE：终端 + 编辑器 + 运行预览一体，掌心里写代码。</p>
       <div class="note">※ 尚处于设想阶段，可能推进，也可能取消。</div>
-    </div>
-    <div class="plan fadeup">
-      <span class="tag" style="background:rgba(55,213,211,.18);color:var(--cyan);border:1px solid rgba(55,213,211,.4)">已开源 · 制作中</span>
-      <h3>moxwebgpu</h3>
-      <p>零依赖的 WebGPU 通用计算（GPGPU）框架：类型化张量、原始 WGSL Kernel、惰性计算图。把算力下推到访客浏览器的 GPU。</p>
-      <div class="note">※ 已开源并上线实时演示，点此查看 ▸ <a href="https://codecloud-dev.github.io/moxwebgpu/" target="_blank" rel="noopener" style="color:var(--cyan)">moxwebgpu 演示页 →</a></div>
     </div>
   </div>
 </section>
@@ -142,7 +207,7 @@
 
 <section id="support" class="wrap">
   <div class="glass support fadeup">
-    <div class="sec-title" style="font-size:28px">喜欢 moxsh？帮它被更多人看见</div>
+    <div class="sec-title" style="font-size:28px">喜欢 MoX？帮它被更多人看见</div>
     <p class="sec-desc">独立小项目最怕「没人知道」。如果你觉得它有用，<b>点个 Star、关注、顺手转发</b>，就是对开发者最大的鼓励，也能让更多被终端折磨过的朋友用上更好的工具。</p>
     <a class="btn primary" id="starBtn" href="#" target="_blank" rel="noopener">★ 在 GitHub 点 Star</a>
   </div>
@@ -169,8 +234,8 @@
 </section>
 
 <footer class="wrap">
-  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> moxsh</div>
-  <div>© 2026 moxsh · 由独立开发者与 AI 协作构建</div>
+  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> MoX</div>
+  <div>© 2026 MoX · 由独立开发者与 AI 协作构建</div>
   <div>开源仓库与全部构建产物，均可在 <a href="#" id="ghLink">GitHub</a> 获取</div>
   <div style="margin-top:8px"><a href="#" id="ghStar">如果它帮到你，别忘了点个 Star ★</a></div>
 </footer>
@@ -195,8 +260,15 @@
 <!-- 登录弹窗 -->
 <div class="modal-mask" id="loginMask">
   <div class="modal glass">
-    <h3>登录 mox 账号</h3>
-    <p class="dim">登录后可用云同步、AI 助手与管理后台。支持任意 GitHub 用户。</p>
+    <h3>登录 MoX 账号</h3>
+    <div class="login-status" id="loginStatus">
+      <span class="dot"></span><span id="loginStatusText">正在检测登录服务…</span>
+    </div>
+    <div class="login-blocks">
+      <div class="lb"><span class="lbi">👤</span><div><b>普通用户</b>：云同步（多设备配置 / 命令历史实时同步），AI 助手随时调用。</div></div>
+      <div class="lb"><span class="lbi">🛡️</span><div><b>管理员</b>：登录后显示「管理后台」入口，用于会员、计费与内容管理。</div></div>
+      <div class="lb"><span class="lbi">🔒</span><div><b>安全</b>：通过 GitHub 登录，凭证仅存本地；云同步内容客户端加密。</div></div>
+    </div>
     <a class="gh" id="ghLoginBtn" href="#">使用 GitHub 登录</a>
     <div class="or">或</div>
     <input id="tokInput" type="password" placeholder="粘贴 GitHub Token（ghp_ / github_pat_）" autocomplete="off" />
@@ -205,6 +277,7 @@
       <button id="tokCancelBtn">取消</button>
     </div>
     <div class="msg" id="loginMsg"></div>
+    <div class="login-hint" id="loginHint"></div>
   </div>
 </div>
 
