@@ -61,6 +61,18 @@
   </div>
 </header>
 
+<!-- ===== 站点公告（后台发布，/notices 公开只读）===== -->
+<section id="noticeBar" class="wrap" style="display:none">
+  <div class="glass" style="padding:14px 18px;margin-bottom:22px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="status on" id="noticeLevel">📢 公告</span>
+      <b id="noticeTitle" style="font-size:14px">—</b>
+      <span style="margin-left:auto;font-size:12px;color:var(--dim)" id="noticeTime"></span>
+    </div>
+    <div id="noticeBody" style="margin-top:8px;font-size:13px;line-height:1.7;white-space:pre-wrap"></div>
+  </div>
+</section>
+
 <!-- ===== 产品矩阵 ===== -->
 <section id="products" class="wrap">
   <div class="sec-head fadeup">
