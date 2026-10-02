@@ -111,6 +111,9 @@ document.getElementById('ghStar').href=GH_BASE;
   var statusEl=document.getElementById('loginStatus');
   var statusText=document.getElementById('loginStatusText');
   var hintEl=document.getElementById('loginHint');
+  var cta=document.getElementById('loginCta');
+  var currentUser=null; /* null = 未登录；登录后驱动导航/CTA/弹窗三处 UI 同步 */
+  var adminHref='';     /* 管理后台秘径，仅 /me 下发给管理员本人 */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
@@ -120,51 +123,95 @@ document.getElementById('ghStar').href=GH_BASE;
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
 
-  /* 后端可达性探测：决定状态点；任意域名都走 pages.dev 反代（不再直连 workers.dev） */
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
+
+  /* 后端可达性探测：决定状态点；任意域名都走 pages.dev 反代（不再直连 workers.dev）。
+     必须校验响应是 JSON——反代失灵时 /me 会落到静态站 fallback 返回 HTML（200），
+     不设防就会误报「在线」，正是此前「登过后还能再登」被掩盖的原因之一 */
   function probeBackend(){
     fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
-      .then(function(r){ setStatus('on','登录服务在线'); })
+      .then(function(r){
+        if((r.headers.get('content-type')||'').indexOf('json')<0)throw new Error('not_json');
+        setStatus('on','登录服务在线');
+      })
       .catch(function(){
         setStatus('off','登录服务暂时不可达');
         if(hintEl)hintEl.innerHTML='登录服务暂时连不上（网络限制或后端维护）。请稍后重试，或改用主站：<a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
       });
   }
 
+  /* ===== 登录态 UI：导航 slot + 账号区 CTA + 弹窗，三处同步 ===== */
+
   function renderUser(u){
+    currentUser=u;
+    if(cta)cta.textContent='已登录 · '+(u.name||u.login||'用户');
     /* 安全 DOM 构建：不拼 HTML，杜绝 XSS；头像加载失败隐藏 */
     slot.textContent='';
     var img=document.createElement('img');img.className='av';img.alt='';
     if(u.avatar_url)img.src=u.avatar_url;
     img.addEventListener('error',function(){img.style.display='none';});
     var out=document.createElement('a');out.href='#';out.textContent='退出';
-    out.addEventListener('click',function(e){e.preventDefault();delTok();location.reload();});
+    out.addEventListener('click',function(e){e.preventDefault();doLogout();});
     slot.appendChild(img);slot.appendChild(out);
   }
   function renderAdmin(path){
     /* 管理后台走秘径，地址只由 /me 下发给管理员本人，公开页面不含该路径。
        链接走 LOGIN_API（pages.dev 反代），任意前端域名都能打开 */
-    var a=document.createElement('a');a.href=LOGIN_API+path;a.textContent='管理后台';
+    adminHref=LOGIN_API+path;
+    var a=document.createElement('a');a.href=adminHref;a.textContent='管理后台';
     slot.insertBefore(a,slot.firstChild);
   }
   function renderLogin(){
+    currentUser=null;adminHref='';
+    if(cta)cta.textContent='登录 MoX 账号';
     slot.innerHTML='<a href="#" id="loginBtn">登录</a>';
     var b=document.getElementById('loginBtn');
     if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
   }
+
+  /* 退出：必须同时撤销服务端会话——OAuth 回调种下的 mox_sid Cookie 有效期 30 天，
+     只删本地 token 的话，刷新后 /me 会回退用 Cookie 鉴权，「退出」形同虚设 */
+  function doLogout(){
+    var t=getTok();
+    try{
+      fetch(LOGIN_API+'/auth/logout',{method:'POST',credentials:'include',
+        headers:t?{'Authorization':'Bearer '+t}:{}}).catch(function(){});
+    }catch(e){}
+    delTok();
+    location.reload();
+  }
+
   function openLogin(){
     mask.classList.add('show');
     var m=document.getElementById('loginMsg');if(m){m.className='msg';m.textContent='';}
     if(hintEl)hintEl.textContent='';
+    var lb=document.getElementById('loginBox');
+    var ib=document.getElementById('loggedInBox');
+    if(currentUser){
+      /* 已登录再点「登录」：展示当前账号 + 退出入口，绝不再次引导登录 */
+      if(lb)lb.style.display='none';
+      if(ib){ib.style.display='';
+        var nm=document.getElementById('meName');
+        if(nm)nm.textContent=currentUser.name||currentUser.login||'';
+        var adm=document.getElementById('meAdminBtn');
+        if(adm){adm.style.display=adminHref?'':'none';adm.href=adminHref;}
+      }
+      return;
+    }
+    if(lb)lb.style.display='';
+    if(ib)ib.style.display='none';
     var gh=document.getElementById('ghLoginBtn');
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
     probeBackend();
   }
-  // 导航「登录」与账号区「登录 MoX 账号」都打开弹窗
-  var cta=document.getElementById('loginCta');
+  // 导航「登录」与账号区「登录 MoX 账号」都打开弹窗（已登录则展示账号态）
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
 
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
+  var meCloseBtn=document.getElementById('meCloseBtn');
+  if(meCloseBtn)meCloseBtn.addEventListener('click',function(){mask.classList.remove('show');});
+  var meLogoutBtn=document.getElementById('meLogoutBtn');
+  if(meLogoutBtn)meLogoutBtn.addEventListener('click',function(){mask.classList.remove('show');doLogout();});
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;
@@ -178,15 +225,29 @@ document.getElementById('ghStar').href=GH_BASE;
       }).catch(function(){m.className='msg err';m.textContent='网络错误，请确认能访问后端。';});
   });
 
-  // 初始化：探测后端 + 探测登录态
+  // 初始化：探测后端 + 恢复登录态（三态：已登录 / token 失效 / 服务不可达）
   (function(){
     probeBackend();
     var t=getTok();
     if(!t){renderLogin();return;}
     fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
-      .then(function(r){return r.ok?r.json().then(function(d){return{ok:true,d:d};}):{ok:false};})
-      .then(function(x){ if(x.ok&&x.d.user){ renderUser(x.d.user); if(x.d.admin_path) renderAdmin(x.d.admin_path); } else renderLogin(); })
-      .catch(function(){renderLogin();});
+      .then(function(r){
+        var ct=(r.headers.get('content-type')||'');
+        if(!r.ok)return{authed:false};              /* 401/403 = token 已失效 */
+        if(ct.indexOf('json')<0)return{down:true};  /* HTML fallback = 反代失灵，token 保留 */
+        return r.json().then(function(d){return{authed:true,d:d};});
+      })
+      .then(function(x){
+        if(x.authed&&x.d&&x.d.user){
+          renderUser(x.d.user);
+          if(x.d.admin_path)renderAdmin(x.d.admin_path);
+        }else if(x.down){
+          renderLogin();setStatus('off','登录服务暂时不可达');
+        }else{
+          delTok();renderLogin(); /* 死 token 清掉，避免每次刷新白跑一趟 */
+        }
+      })
+      .catch(function(){ renderLogin(); setStatus('off','登录服务暂时不可达'); });
   })();
 })();
 
