@@ -50,6 +50,6 @@ export async function proxy(context) {
   }
 }
 
-export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS_HEADERS });
-export const onRequestGet = (ctx) => proxy(ctx);
-export const onRequestPost = (ctx) => proxy(ctx);
+export const pgOptions = () => new Response(null, { status: 204, headers: CORS_HEADERS });
+export const pgGet = (ctx) => proxy(ctx);
+export const pgPost = (ctx) => proxy(ctx);
