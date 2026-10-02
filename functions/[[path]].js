@@ -9,6 +9,21 @@
 import { proxy, CORS_HEADERS } from './api-proxy.js';
 
 export async function onRequestGet(context) {
+  const url = new URL(context.request.url);
+  // 后台秘径下的 /api/* 一定是 worker 接口，绝无静态资源：直接转发，
+  // 跳过 ASSETS 预检，避免静态层误拦截导致「已登录却判未授权 → 再登录」。
+  if (url.pathname.includes('/api/')) {
+    const wres = await proxy(context);
+    if (wres.status === 404 && context.env.ASSETS) {
+      try {
+        const p404 = await context.env.ASSETS.fetch(new URL('/404.html', url).toString());
+        if (p404 && p404.status === 200) {
+          return new Response(p404.body, { status: 404, headers: p404.headers });
+        }
+      } catch (e) { /* 缺失 404.html 时原样返回 worker 404 */ }
+    }
+    return wres;
+  }
   // 静态资源命中（200/301/304…）原样返回；404 视为「可能走 worker」。
   // 注意：项目根带 404.html 时 Pages 不做 SPA fallback，未知路径才是真 404，
   // 否则 ASSETS 会对一切未知路径回 200 index.html，转发逻辑永远不触发。
