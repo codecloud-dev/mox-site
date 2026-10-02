@@ -95,12 +95,17 @@ document.getElementById('ghStar').href=GH_BASE;
 
 /* ===== 登录 / 用户态（对接 mox-id 后端）===== */
 (function(){
-  var API='https://mox-id.3042980037.workers.dev';
-  /* 登录链路按部署域名自动选路：
-     - Cloudflare Pages（*.pages.dev）有边缘函数 → 走同域 Functions 反代（LOGIN_API=''）
-     - GitHub Pages（github.io）等无边缘函数环境 → 直连后端 workers.dev
-     一份源码推到 main，pages.dev 与 github.io 两边都自动更新、都能登录 */
-  var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : API;
+  /* 登录链路统一走 pages.dev 边缘反代，绝不让浏览器直连 workers.dev
+     （*.workers.dev 在部分地区含中国大陆不可达，直连=点登录没反应）：
+     - 在 *.pages.dev 上：同域 Functions 反代（LOGIN_API=''）
+     - 其他域名（github.io 镜像、本地开发、未来自定义域）：跨域走
+       https://mox-site.pages.dev 反代——CORS 全开且 Function 应答 preflight，
+       fetch 带 Authorization / content-type 均可用
+     OAuth 回跳闭环：任意域打开弹窗 → pages.dev/auth/github/start(302→GitHub)
+     → callback(pages.dev) → 302 回 redirect 参数指定的原页面 ?token=...
+     → 页面把 token 存进本域 localStorage */
+  var PAGES_ORIGIN = 'https://mox-site.pages.dev';
+  var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : PAGES_ORIGIN;
   var slot=document.getElementById('authSlot');
   var mask=document.getElementById('loginMask');
   var statusEl=document.getElementById('loginStatus');
@@ -115,18 +120,14 @@ document.getElementById('ghStar').href=GH_BASE;
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
 
-  /* 后端可达性探测：决定状态点；github.io 不可达时引导去主站 pages.dev */
+  /* 后端可达性探测：决定状态点；任意域名都走 pages.dev 反代（不再直连 workers.dev） */
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
   function probeBackend(){
     fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
       .then(function(r){ setStatus('on','登录服务在线'); })
       .catch(function(){
-        if(location.hostname.endsWith('.github.io')){
-          setStatus('off','登录服务在当前域名不可达');
-          if(hintEl)hintEl.innerHTML='当前域名（github.io）登录链路可能受网络限制。请改用主站登录：<a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
-        } else {
-          setStatus('warn','登录服务暂时不可达，可稍后重试');
-        }
+        setStatus('off','登录服务暂时不可达');
+        if(hintEl)hintEl.innerHTML='登录服务暂时连不上（网络限制或后端维护）。请稍后重试，或改用主站：<a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
       });
   }
 
@@ -142,7 +143,7 @@ document.getElementById('ghStar').href=GH_BASE;
   }
   function renderAdmin(path){
     /* 管理后台走秘径，地址只由 /me 下发给管理员本人，公开页面不含该路径。
-       链接走 LOGIN_API：在 pages.dev 上经同域反代可达，在 github.io 直连后端 */
+       链接走 LOGIN_API（pages.dev 反代），任意前端域名都能打开 */
     var a=document.createElement('a');a.href=LOGIN_API+path;a.textContent='管理后台';
     slot.insertBefore(a,slot.firstChild);
   }
