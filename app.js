@@ -298,3 +298,34 @@ document.querySelectorAll('[data-act]').forEach(function(el){
     if(a==='copy')copyVal(el.getAttribute('data-target'));
   });
 });
+
+/* ===== 站点公告：读取后端 /notices（公开只读），展示最新一条高优先级公告 =====
+   后台「公告发布」页面写入，此处只读；无公告或接口不可用时整块隐藏，不影响首屏。 */
+(function(){
+  var PAGES_ORIGIN = 'https://mox-site.pages.dev';
+  var API = location.hostname.endsWith('.pages.dev') ? '' : PAGES_ORIGIN;
+  var sec = document.getElementById('noticeBar');
+  if(!sec) return;
+  fetch(API+'/notices',{method:'GET',cache:'no-store'})
+    .then(function(r){
+      var ct=(r.headers.get('content-type')||'');
+      if(ct.indexOf('json')<0)throw new Error('not_json');
+      return r.json();
+    })
+    .then(function(d){
+      var ns=(d&&d.notices)||[];
+      if(!ns.length)return;
+      var order={critical:0,warn:1,info:2};
+      ns.sort(function(a,b){return (order[a.level]===undefined?3:order[a.level])-(order[b.level]===undefined?3:order[b.level]);});
+      var n=ns[0];
+      var lv=document.getElementById('noticeLevel');
+      var lvMap={critical:'🚨 紧急',warn:'⚠️ 重要',info:'📢 公告'};
+      if(lv) lv.textContent=lvMap[n.level]||'📢 公告';
+      document.getElementById('noticeTitle').textContent=n.title||'';
+      document.getElementById('noticeBody').textContent=n.body||'';
+      var t=document.getElementById('noticeTime');
+      if(t&&n.created_at) t.textContent=new Date(n.created_at).toLocaleString('zh-CN',{hour12:false});
+      sec.style.display='';
+    })
+    .catch(function(){ /* 静默：无公告或后端不可达时不打扰访客 */ });
+})();
