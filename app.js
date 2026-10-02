@@ -103,6 +103,9 @@ document.getElementById('ghStar').href=GH_BASE;
   var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : API;
   var slot=document.getElementById('authSlot');
   var mask=document.getElementById('loginMask');
+  var statusEl=document.getElementById('loginStatus');
+  var statusText=document.getElementById('loginStatusText');
+  var hintEl=document.getElementById('loginHint');
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
@@ -111,6 +114,21 @@ document.getElementById('ghStar').href=GH_BASE;
   (function(){var u=new URL(location.href);var t=u.searchParams.get('token');
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
+
+  /* 后端可达性探测：决定状态点；github.io 不可达时引导去主站 pages.dev */
+  function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
+  function probeBackend(){
+    fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
+      .then(function(r){ setStatus('on','登录服务在线'); })
+      .catch(function(){
+        if(location.hostname.endsWith('.github.io')){
+          setStatus('off','登录服务在当前域名不可达');
+          if(hintEl)hintEl.innerHTML='当前域名（github.io）登录链路可能受网络限制。请改用主站登录：<a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
+        } else {
+          setStatus('warn','登录服务暂时不可达，可稍后重试');
+        }
+      });
+  }
 
   function renderUser(u){
     /* 安全 DOM 构建：不拼 HTML，杜绝 XSS；头像加载失败隐藏 */
@@ -123,19 +141,28 @@ document.getElementById('ghStar').href=GH_BASE;
     slot.appendChild(img);slot.appendChild(out);
   }
   function renderAdmin(path){
-    /* 管理后台走秘径，地址只由 /me 下发给管理员本人，公开页面不含该路径 */
-    var a=document.createElement('a');a.href=API+path;a.textContent='管理后台';
+    /* 管理后台走秘径，地址只由 /me 下发给管理员本人，公开页面不含该路径。
+       链接走 LOGIN_API：在 pages.dev 上经同域反代可达，在 github.io 直连后端 */
+    var a=document.createElement('a');a.href=LOGIN_API+path;a.textContent='管理后台';
     slot.insertBefore(a,slot.firstChild);
   }
   function renderLogin(){
     slot.innerHTML='<a href="#" id="loginBtn">登录</a>';
-    document.getElementById('loginBtn').addEventListener('click',function(e){e.preventDefault();openLogin();});
+    var b=document.getElementById('loginBtn');
+    if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
   }
   function openLogin(){
     mask.classList.add('show');
-    var m=document.getElementById('loginMsg');m.className='msg';m.textContent='';
-    document.getElementById('ghLoginBtn').href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    var m=document.getElementById('loginMsg');if(m){m.className='msg';m.textContent='';}
+    if(hintEl)hintEl.textContent='';
+    var gh=document.getElementById('ghLoginBtn');
+    if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    probeBackend();
   }
+  // 导航「登录」与账号区「登录 MoX 账号」都打开弹窗
+  var cta=document.getElementById('loginCta');
+  if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
+
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
@@ -145,13 +172,14 @@ document.getElementById('ghStar').href=GH_BASE;
       .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
       .then(function(x){
         if(!x.ok){m.className='msg err';m.textContent='失败：'+(x.d.error||'未知');return;}
-        if(!x.d.is_admin){m.className='msg err';m.textContent='登录成功，但此账号不是管理员（无后台权限）。';return;}
+        /* 普通 GitHub 用户与管理员都能登录；仅管理员会额外出现「管理后台」入口 */
         setTok(t);mask.classList.remove('show');location.reload();
       }).catch(function(){m.className='msg err';m.textContent='网络错误，请确认能访问后端。';});
   });
 
-  // 初始化：探测登录态
+  // 初始化：探测后端 + 探测登录态
   (function(){
+    probeBackend();
     var t=getTok();
     if(!t){renderLogin();return;}
     fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
