@@ -269,12 +269,22 @@
       <div class="lb"><span class="lbi">🛡️</span><div><b>管理员</b>：登录后显示「管理后台」入口，用于会员、计费与内容管理。</div></div>
       <div class="lb"><span class="lbi">🔒</span><div><b>安全</b>：通过 GitHub 登录，凭证仅存本地；云同步内容客户端加密。</div></div>
     </div>
-    <a class="gh" id="ghLoginBtn" href="#">使用 GitHub 登录</a>
-    <div class="or">或</div>
-    <input id="tokInput" type="password" placeholder="粘贴 GitHub Token（ghp_ / github_pat_）" autocomplete="off" />
-    <div class="row">
-      <button id="tokLoginBtn" class="primary">登录</button>
-      <button id="tokCancelBtn">取消</button>
+    <div id="loginBox">
+      <a class="gh" id="ghLoginBtn" href="#">使用 GitHub 登录</a>
+      <div class="or">或</div>
+      <input id="tokInput" type="password" placeholder="粘贴 GitHub Token（ghp_ / github_pat_）" autocomplete="off" />
+      <div class="row">
+        <button id="tokLoginBtn" class="primary">登录</button>
+        <button id="tokCancelBtn">取消</button>
+      </div>
+    </div>
+    <div id="loggedInBox" style="display:none">
+      <div class="lb"><span class="lbi">✅</span><div>当前已登录为 <b id="meName"></b>。凭证仅保存在本机浏览器，可随时退出。</div></div>
+      <div class="row">
+        <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">进入管理后台</a>
+        <button id="meLogoutBtn" class="primary">退出登录</button>
+        <button id="meCloseBtn">关闭</button>
+      </div>
     </div>
     <div class="msg" id="loginMsg"></div>
     <div class="login-hint" id="loginHint"></div>

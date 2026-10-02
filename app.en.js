@@ -96,6 +96,9 @@ document.getElementById('ghStar').href=GH_BASE;
   var statusEl=document.getElementById('loginStatus');
   var statusText=document.getElementById('loginStatusText');
   var hintEl=document.getElementById('loginHint');
+  var cta=document.getElementById('loginCta');
+  var currentUser=null; /* null = signed out; drives nav / CTA / modal UI in sync once signed in */
+  var adminHref='';     /* Admin console secret path, delivered only to admins via /me */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
@@ -103,51 +106,95 @@ document.getElementById('ghStar').href=GH_BASE;
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
 
-  /* Backend reachability probe: drives the status dot; every domain goes through the pages.dev proxy */
+  /* Backend reachability probe: drives the status dot; every domain goes through the pages.dev proxy.
+     Must verify the response is JSON — when the proxy breaks, /me falls into the static-site
+     fallback and returns HTML (200); without this guard we'd falsely report "online" */
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
   function probeBackend(){
     fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
-      .then(function(r){ setStatus('on','Sign-in service online'); })
+      .then(function(r){
+        if((r.headers.get('content-type')||'').indexOf('json')<0)throw new Error('not_json');
+        setStatus('on','Sign-in service online');
+      })
       .catch(function(){
         setStatus('off','Sign-in service temporarily unreachable');
         if(hintEl)hintEl.innerHTML='Cannot reach the sign-in service right now (network restrictions or maintenance). Retry later, or use the primary site: <a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
       });
   }
 
+  /* ===== Signed-in UI: nav slot + account CTA + modal, kept in sync ===== */
+
   function renderUser(u){
+    currentUser=u;
+    if(cta)cta.textContent='Signed in · '+(u.name||u.login||'user');
     /* Safe DOM building: no HTML concatenation (XSS-proof); hide avatar on load error */
     slot.textContent='';
     var img=document.createElement('img');img.className='av';img.alt='';
     if(u.avatar_url)img.src=u.avatar_url;
     img.addEventListener('error',function(){img.style.display='none';});
     var out=document.createElement('a');out.href='#';out.textContent='Sign out';
-    out.addEventListener('click',function(e){e.preventDefault();delTok();location.reload();});
+    out.addEventListener('click',function(e){e.preventDefault();doLogout();});
     slot.appendChild(img);slot.appendChild(out);
   }
   function renderAdmin(path){
     /* Admin console lives on a secret path; the address is only delivered to admins via /me.
        Link goes through LOGIN_API (the pages.dev proxy), so it opens from any frontend domain */
-    var a=document.createElement('a');a.href=LOGIN_API+path;a.textContent='Console';
+    adminHref=LOGIN_API+path;
+    var a=document.createElement('a');a.href=adminHref;a.textContent='Console';
     slot.insertBefore(a,slot.firstChild);
   }
   function renderLogin(){
+    currentUser=null;adminHref='';
+    if(cta)cta.textContent='Sign in to MoX';
     slot.innerHTML='<a href="#" id="loginBtn">Sign in</a>';
     var b=document.getElementById('loginBtn');
     if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
   }
+
+  /* Sign out must also revoke the server session — the mox_sid cookie planted by the
+     OAuth callback lasts 30 days; clearing only the local token would let /me fall
+     back to cookie auth on next reload, making "sign out" a no-op */
+  function doLogout(){
+    var t=getTok();
+    try{
+      fetch(LOGIN_API+'/auth/logout',{method:'POST',credentials:'include',
+        headers:t?{'Authorization':'Bearer '+t}:{}}).catch(function(){});
+    }catch(e){}
+    delTok();
+    location.reload();
+  }
+
   function openLogin(){
     mask.classList.add('show');
     var m=document.getElementById('loginMsg');if(m){m.className='msg';m.textContent='';}
     if(hintEl)hintEl.textContent='';
+    var lb=document.getElementById('loginBox');
+    var ib=document.getElementById('loggedInBox');
+    if(currentUser){
+      /* Clicking "sign in" while signed in: show the current account + sign-out, never re-prompt */
+      if(lb)lb.style.display='none';
+      if(ib){ib.style.display='';
+        var nm=document.getElementById('meName');
+        if(nm)nm.textContent=currentUser.name||currentUser.login||'';
+        var adm=document.getElementById('meAdminBtn');
+        if(adm){adm.style.display=adminHref?'':'none';adm.href=adminHref;}
+      }
+      return;
+    }
+    if(lb)lb.style.display='';
+    if(ib)ib.style.display='none';
     var gh=document.getElementById('ghLoginBtn');
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
     probeBackend();
   }
-  // Both the nav "Sign in" and the account-section CTA open the modal
-  var cta=document.getElementById('loginCta');
+  // Both the nav "Sign in" and the account-section CTA open the modal (shows account state when signed in)
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
 
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
+  var meCloseBtn=document.getElementById('meCloseBtn');
+  if(meCloseBtn)meCloseBtn.addEventListener('click',function(){mask.classList.remove('show');});
+  var meLogoutBtn=document.getElementById('meLogoutBtn');
+  if(meLogoutBtn)meLogoutBtn.addEventListener('click',function(){mask.classList.remove('show');doLogout();});
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;
@@ -160,14 +207,30 @@ document.getElementById('ghStar').href=GH_BASE;
         setTok(t);mask.classList.remove('show');location.reload();
       }).catch(function(){m.className='msg err';m.textContent='Network error.';});
   });
+
+  // Init: probe backend + restore session (three states: signed in / token dead / service down)
   (function(){
     probeBackend();
     var t=getTok();
     if(!t){renderLogin();return;}
     fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
-      .then(function(r){return r.ok?r.json().then(function(d){return{ok:true,d:d};}):{ok:false};})
-      .then(function(x){ if(x.ok&&x.d.user){ renderUser(x.d.user); if(x.d.admin_path) renderAdmin(x.d.admin_path); } else renderLogin(); })
-      .catch(function(){renderLogin();});
+      .then(function(r){
+        var ct=(r.headers.get('content-type')||'');
+        if(!r.ok)return{authed:false};              /* 401/403 = token no longer valid */
+        if(ct.indexOf('json')<0)return{down:true};  /* HTML fallback = proxy down, keep token */
+        return r.json().then(function(d){return{authed:true,d:d};});
+      })
+      .then(function(x){
+        if(x.authed&&x.d&&x.d.user){
+          renderUser(x.d.user);
+          if(x.d.admin_path)renderAdmin(x.d.admin_path);
+        }else if(x.down){
+          renderLogin();setStatus('off','Sign-in service temporarily unreachable');
+        }else{
+          delTok();renderLogin(); /* drop dead tokens so we don't retry them every reload */
+        }
+      })
+      .catch(function(){ renderLogin(); setStatus('off','Sign-in service temporarily unreachable'); });
   })();
 })();
 
