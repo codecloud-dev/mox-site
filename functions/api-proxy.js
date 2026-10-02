@@ -31,6 +31,10 @@ export async function proxy(context) {
   const upstream = UPSTREAM + url.pathname + url.search;
   try {
     const req = new Request(upstream, request);
+    // 显式透传会话 Cookie（mox_sid），确保后台 /api/* 能识别已登录管理员，
+    // 避免「官网已登录、进后台却要再登录」。
+    const ck = request.headers.get('Cookie');
+    if (ck) req.headers.set('Cookie', ck);
     req.headers.set('X-Forwarded-Host', url.host);
     const res = await fetch(req, { redirect: 'manual' });
     const out = new Response(res.body, res);
