@@ -80,8 +80,11 @@ document.getElementById('ghStar').href=GH_BASE;
 /* ===== 登录 / 用户态（对接 mox-id 后端）===== */
 (function(){
   var API='https://mox-id.3042980037.workers.dev';
-  /* 登录链路走官网同域反代（/auth/*、/me 由 CF Pages Functions 转发），workers.dev 部分网络不可达 */
-  var LOGIN_API='';
+  /* Login route is chosen by the deploy domain:
+     - Cloudflare Pages (*.pages.dev) has edge functions → same-origin proxy (LOGIN_API='')
+     - GitHub Pages (github.io) etc. have no edge functions → talk to the workers.dev backend directly
+     One source on main → both pages.dev and github.io update automatically and can log in */
+  var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : API;
   var slot=document.getElementById('authSlot');
   var mask=document.getElementById('loginMask');
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
