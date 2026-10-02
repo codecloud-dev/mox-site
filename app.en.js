@@ -87,12 +87,31 @@ document.getElementById('ghStar').href=GH_BASE;
   var LOGIN_API = location.hostname.endsWith('.pages.dev') ? '' : API;
   var slot=document.getElementById('authSlot');
   var mask=document.getElementById('loginMask');
+  var statusEl=document.getElementById('loginStatus');
+  var statusText=document.getElementById('loginStatusText');
+  var hintEl=document.getElementById('loginHint');
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
   (function(){var u=new URL(location.href);var t=u.searchParams.get('token');
     if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
   })();
+
+  /* Backend reachability probe: drives the status dot; on github.io unreachable, point to primary site */
+  function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
+  function probeBackend(){
+    fetch(LOGIN_API+'/me',{method:'GET',cache:'no-store'})
+      .then(function(r){ setStatus('on','Sign-in service online'); })
+      .catch(function(){
+        if(location.hostname.endsWith('.github.io')){
+          setStatus('off','Sign-in service unreachable on this domain');
+          if(hintEl)hintEl.innerHTML='Current domain (github.io) may be network-limited. Use the primary site: <a href="https://mox-site.pages.dev/" target="_blank" rel="noopener">mox-site.pages.dev</a>';
+        } else {
+          setStatus('warn','Sign-in service temporarily unreachable, retry later');
+        }
+      });
+  }
+
   function renderUser(u){
     /* Safe DOM building: no HTML concatenation (XSS-proof); hide avatar on load error */
     slot.textContent='';
@@ -104,19 +123,28 @@ document.getElementById('ghStar').href=GH_BASE;
     slot.appendChild(img);slot.appendChild(out);
   }
   function renderAdmin(path){
-    /* Admin console lives on a secret path; the address is only delivered to admins via /me */
-    var a=document.createElement('a');a.href=API+path;a.textContent='Console';
+    /* Admin console lives on a secret path; the address is only delivered to admins via /me.
+       Link goes through LOGIN_API: proxied on pages.dev, direct to backend on github.io */
+    var a=document.createElement('a');a.href=LOGIN_API+path;a.textContent='Console';
     slot.insertBefore(a,slot.firstChild);
   }
   function renderLogin(){
     slot.innerHTML='<a href="#" id="loginBtn">Sign in</a>';
-    document.getElementById('loginBtn').addEventListener('click',function(e){e.preventDefault();openLogin();});
+    var b=document.getElementById('loginBtn');
+    if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
   }
   function openLogin(){
     mask.classList.add('show');
-    var m=document.getElementById('loginMsg');m.className='msg';m.textContent='';
-    document.getElementById('ghLoginBtn').href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    var m=document.getElementById('loginMsg');if(m){m.className='msg';m.textContent='';}
+    if(hintEl)hintEl.textContent='';
+    var gh=document.getElementById('ghLoginBtn');
+    if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    probeBackend();
   }
+  // Both the nav "Sign in" and the account-section CTA open the modal
+  var cta=document.getElementById('loginCta');
+  if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
+
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
   mask.addEventListener('click',function(e){if(e.target===mask)mask.classList.remove('show');});
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
@@ -126,11 +154,12 @@ document.getElementById('ghStar').href=GH_BASE;
       .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
       .then(function(x){
         if(!x.ok){m.className='msg err';m.textContent='Failed: '+(x.d.error||'unknown');return;}
-        if(!x.d.is_admin){m.className='msg err';m.textContent='Signed in, but this account is not an admin.';return;}
+        /* Any GitHub user (normal or admin) can sign in; only admins get the console entry */
         setTok(t);mask.classList.remove('show');location.reload();
       }).catch(function(){m.className='msg err';m.textContent='Network error.';});
   });
   (function(){
+    probeBackend();
     var t=getTok();
     if(!t){renderLogin();return;}
     fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})

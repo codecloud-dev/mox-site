@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>moxsh · A liquid-glass terminal in your pocket</title>
+<title>MoX · A solo developer's toolbox universe</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<meta name="description" content="moxsh —— a liquid-glass terminal that runs on Android. Rust-built core, fully Termux-compatible. No root, no setup, just install and go.">
+<meta name="description" content="The MoX family — moxsh liquid-glass terminal, moxwebgpu WebGPU compute framework, mox-id unified identity backend. Desktop-grade tools in your pocket; compute pushed to your device.">
 <meta name="color-scheme" content="dark">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-id.3042980037.workers.dev; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -13,13 +13,14 @@
 </head>
 <body>
 <nav class="glass">
-  <div class="brand"><span class="mark"></span><span>moxsh</span></div>
+  <div class="brand"><span class="mark"></span><span>MoX</span></div>
   <div class="links">
-    <a href="#features">Features</a>
-    <a href="experience.html">Live Demo</a>
+    <a href="#products">Products</a>
+    <a href="#features">moxsh</a>
+    <a href="experience.html">Try online</a>
+    <a href="#account">Account</a>
     <a href="#download">Download</a>
     <a href="#plans">Plans</a>
-    <a href="#support">Support</a>
     <a href="#contact">Contact</a>
     <a class="lang" href="index.html">中文</a>
     <span id="authSlot"></span>
@@ -27,14 +28,16 @@
 </nav>
 
 <header class="wrap">
-  <span class="eyebrow"><span class="dot"></span>Android · Liquid-glass terminal</span>
-  <h1>Linux in your pocket,<br><span class="em">redesigned</span>.</h1>
-  <p class="sub">moxsh is a terminal that runs on Android: a Rust-built core, fully Termux-compatible. No root, no setup — install and go.</p>
+  <span class="eyebrow"><span class="dot"></span>MoX family · a solo developer's toolbox universe</span>
+  <h1>Desktop-grade power,<br><span class="em">in the palm of your hand</span>.</h1>
+  <p class="sub">MoX is a set of independent tools — a liquid-glass terminal, a WebGPU compute framework, a unified identity & cloud-sync backend… They share one account and one cloud sync, pushing compute to your device instead of someone's cloud.</p>
+
   <div class="hero-cta">
-    <a class="btn primary" href="#download">Get moxsh</a>
-    <a class="btn" href="experience.html">Live Demo ↑</a>
-    <a class="btn" href="#features">See what it does</a>
+    <a class="btn primary" href="#products">Meet the MoX family</a>
+    <a class="btn" href="#download">Get moxsh</a>
+    <a class="btn" href="#account">How the account works</a>
   </div>
+
   <div class="stage">
     <div class="device glass" id="device" aria-hidden="true">
       <div class="notch"></div>
@@ -53,10 +56,47 @@
   </div>
 </header>
 
+<section id="products" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">The MoX family</div>
+    <p class="sec-desc">One account, one cloud sync, tools for different jobs. Shipped ones work today; planned ones are what's next.</p>
+  </div>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <span class="status on">✅ Live</span>
+      <h3>moxsh</h3>
+      <p>A liquid-glass terminal on Android. Rust core, fully Termux-compatible, no root, install and go.</p>
+      <a class="more" href="#features">What makes it strong ↓</a>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status on">✅ Live</span>
+      <h3>mox-id</h3>
+      <p>MoX's unified identity & account base: one-click GitHub login, cloud sync, membership, billing, admin console.</p>
+      <a class="more" href="#account">Account & cloud sync ↓</a>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status dev">✅ Open source · WIP</span>
+      <h3>moxwebgpu</h3>
+      <p>A zero-dependency WebGPU GPGPU framework: typed tensors, raw WGSL kernels, a lazy compute graph. Compute pushed to the visitor's GPU.</p>
+      <a class="more" href="https://codecloud-dev.github.io/moxwebgpu/" target="_blank" rel="noopener">Live demo →</a>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status plan">Planned · TBD</span>
+      <h3>moxbox</h3>
+      <p>File manager & system suite: phone storage, processes, network — all in one glass UI.</p>
+    </div>
+    <div class="card glass fadeup">
+      <span class="status plan">Planned · TBD</span>
+      <h3>moxcode</h3>
+      <p>A lightweight mobile IDE: terminal + editor + run-preview in one, coding in your palm.</p>
+    </div>
+  </div>
+</section>
+
 <section id="features" class="wrap">
   <div class="sec-head fadeup">
-    <div class="sec-title">A terminal built for speed &amp; beauty</div>
-    <p class="sec-desc">The core is rewritten in Rust; the UI is redrawn in liquid glass. Every experience is reconsidered from the ground up.</p>
+    <div class="sec-title">A terminal built for speed & beauty</div>
+    <p class="sec-desc">moxsh is MoX's flagship: Rust core rewritten from scratch, UI redrawn in liquid glass. Every detail rethought from the bottom up.</p>
   </div>
   <div class="grid">
     <div class="card glass fadeup">
@@ -67,22 +107,22 @@
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z"/></svg></div>
       <h3>Liquid-glass UI</h3>
-      <p>Real-time blur, translucent layers, top highlight and refractive edge — like real glass, not a sticker.</p>
+      <p>Live blur, translucent layers, top highlight & refraction edges — like real glass, not a sticker.</p>
     </div>
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
-      <h3>Termux compatible</h3>
-      <p>Eats the official Termux repos directly — <code>*.deb</code> installs and runs, commands behave the same.</p>
+      <h3>Termux-compatible</h3>
+      <p>Eats the official Termux repos; <code>*.deb</code> installs and runs; commands & ecosystem are identical.</p>
     </div>
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 7h.01M7 17h.01"/></svg></div>
       <h3>PRoot distros</h3>
-      <p>Ubuntu / Debian / Kali / Alpine one-tap. Isolated environment, no touching the system.</p>
+      <p>Ubuntu / Debian / Kali / Alpine one-tap; isolated sandbox to play in, without touching the system.</p>
     </div>
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M18 15l.9 2.3L21 18l-2.1.7L18 21l-.9-2.3L15 18l2.1-.7z"/></svg></div>
       <h3>AI assistant</h3>
-      <p>Explain errors, write scripts, manage environments. Supports DeepSeek / Zhipu / Qwen / Kimi and more.</p>
+      <p>Explains errors, writes scripts, manages env; supports DeepSeek / Zhipu / Qwen / Kimi and more.</p>
     </div>
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
@@ -92,29 +132,52 @@
   </div>
 </section>
 
+<section id="account" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">One MoX account, every device</div>
+    <p class="sec-desc">All MoX products share one identity (powered by the <b>mox-id</b> backend). After sign-in, normal users and admins each get what they need.</p>
+  </div>
+  <div class="grid">
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <h3>Normal users · cloud sync</h3>
+      <p>Multi-device config and command history sync in real time; AI quota shared across devices. Any GitHub user can sign in, free to start.</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <h3>Admins · admin console</h3>
+      <p>An "Admin console" entry appears after sign-in — for membership tiers, billing reconciliation, content & ops. The entry is a secret path, delivered only to admins.</p>
+    </div>
+    <div class="card glass fadeup">
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <h3>Security</h3>
+      <p>Sign in with GitHub; credentials stay local. Cloud-sync data is client-encrypted before upload — the server never sees plaintext. One-tap sign-out.</p>
+    </div>
+  </div>
+  <div class="glass support fadeup" style="margin-top:22px">
+    <div class="sec-title" style="font-size:24px">Want to try first?</div>
+    <p class="sec-desc">Tap "Sign in" at the top-right to enter with your GitHub account. Normal users get cloud sync right away; admins see a dedicated console entry.</p>
+    <a class="btn primary" id="loginCta" href="#">Sign in to MoX</a>
+  </div>
+</section>
+
 <section id="plans" class="wrap">
   <div class="sec-head fadeup">
-    <div class="sec-title">Future plans · tentative</div>
-    <p class="sec-desc">After moxsh, we want to keep exploring "desktop-grade tools in your pocket". These are just <b>possible directions</b> — <b>may or may not ever happen</b>. Nothing is promised until shipped.</p>
+    <div class="sec-title">Future plans · TBD</div>
+    <p class="sec-desc">After moxsh / mox-id / moxwebgpu, we want to keep exploring "desktop-grade tools in your pocket". These are just <b>possible directions</b> — <b>may ship, may never</b>; nothing is promised until released.</p>
   </div>
   <div class="plans">
     <div class="plan fadeup">
-      <span class="tag">Planned · tentative</span>
+      <span class="tag">Planned · TBD</span>
       <h3>moxbox</h3>
-      <p>A file manager &amp; system suite — phone storage, processes and network, all in one glass UI.</p>
-      <div class="note">※ Early concept only. No release commitment.</div>
+      <p>File manager & system suite: phone storage, processes, network — one glass UI.</p>
+      <div class="note">※ Early concept; no release commitment.</div>
     </div>
     <div class="plan fadeup">
-      <span class="tag">Planned · tentative</span>
+      <span class="tag">Planned · TBD</span>
       <h3>moxcode</h3>
-      <p>A lightweight mobile IDE: terminal + editor + run-preview, coding in your palm.</p>
-      <div class="note">※ Concept stage. May proceed, may be dropped.</div>
-    </div>
-    <div class="plan fadeup">
-      <span class="tag" style="background:rgba(55,213,211,.18);color:var(--cyan);border:1px solid rgba(55,213,211,.4)">Open source · in progress</span>
-      <h3>moxwebgpu</h3>
-      <p>A zero-dependency WebGPU general-purpose compute (GPGPU) framework: typed tensors, raw WGSL kernels, a lazy compute graph. Compute is pushed down to the visitor's browser GPU.</p>
-      <div class="note">※ Open source with a live demo — view it ▸ <a href="https://codecloud-dev.github.io/moxwebgpu/" target="_blank" rel="noopener" style="color:var(--cyan)">moxwebgpu demo →</a></div>
+      <p>A lightweight mobile IDE: terminal + editor + run-preview in one.</p>
+      <div class="note">※ Early concept; may proceed, may be dropped.</div>
     </div>
   </div>
 </section>
@@ -122,26 +185,26 @@
 <section id="download" class="wrap">
   <div class="sec-head fadeup">
     <div class="sec-title">Download moxsh</div>
-    <p class="sec-desc">Builds are produced continuously with every push. Pick whichever suits you.</p>
+    <p class="sec-desc">Build artifacts are published continuously. Pick either way.</p>
   </div>
   <div class="dl-grid">
     <div class="dl glass fadeup">
       <h3>Release APK</h3>
-      <p>The latest officially signed APK. Fastest path when GitHub is reachable.</p>
+      <p>The latest auto-built, signed APK. Fastest path when GitHub is reachable.</p>
       <a class="btn primary" id="dlLatest" href="#" target="_blank" rel="noopener">Go to downloads →</a>
     </div>
     <div class="dl glass fadeup">
       <h3>Contact us</h3>
-      <p>Network trouble, or want a preview build? Reach us via the contact info below and we'll send it over.</p>
-      <a class="btn" href="#contact">Show contacts ↓</a>
+      <p>Network trouble or want a nightly? Reach us below and we'll send the APK directly.</p>
+      <a class="btn" href="#contact">See contacts ↓</a>
     </div>
   </div>
 </section>
 
 <section id="support" class="wrap">
   <div class="glass support fadeup">
-    <div class="sec-title" style="font-size:28px">Like moxsh? Help more people find it</div>
-    <p class="sec-desc">Small indie projects live or die on visibility. If it's useful to you, a <b>Star, a follow, or a share</b> is the biggest encouragement — and helps more terminal-weary devs find a better tool.</p>
+    <div class="sec-title" style="font-size:28px">Like MoX? Help more people find it</div>
+    <p class="sec-desc">Small indie projects fear being unknown most. If it helps you, a <b>Star, a follow, a share</b> is the biggest encouragement — and helps more terminal-weary friends find a better tool.</p>
     <a class="btn primary" id="starBtn" href="#" target="_blank" rel="noopener">★ Star on GitHub</a>
   </div>
 </section>
@@ -149,7 +212,7 @@
 <section id="contact" class="wrap">
   <div class="glass contact fadeup">
     <div class="sec-title" style="font-size:26px">Contact us</div>
-    <p>Feedback, collaboration, or a build — reach us directly. Contacts are hidden by default; tap to reveal.</p>
+    <p>Feedback, collaboration, or getting an APK — just reach us. Contacts are hidden by default; tap to reveal.</p>
     <button class="btn primary" data-act="revealContact">Show contacts</button>
     <div id="contactCards">
       <div class="citem glass">
@@ -167,20 +230,20 @@
 </section>
 
 <footer class="wrap">
-  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> moxsh</div>
-  <div>© 2026 moxsh · Built by an indie dev with AI</div>
-  <div>Source and all builds on <a href="#" id="ghLink">GitHub</a></div>
-  <div style="margin-top:8px"><a href="#" id="ghStar">If it helped you, don't forget to Star it ★</a></div>
+  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> MoX</div>
+  <div>© 2026 MoX · Built by an indie developer with AI</div>
+  <div>Source & all build artifacts on <a href="#" id="ghLink">GitHub</a></div>
+  <div style="margin-top:8px"><a href="#" id="ghStar">If it helps, don't forget a Star ★</a></div>
 </footer>
 
 <div id="gate" class="gate" aria-hidden="true">
   <div class="glass gate-card">
-    <div class="gate-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
-    <h3>Human verification</h3>
-    <p id="gateMsg">This visit looks unusual. Please slide to verify to continue.</p>
+    <div class="gate-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+    <h3>Security check</h3>
+    <p id="gateMsg">Unusual traffic detected. Please slide to verify to continue.</p>
     <div class="slider" id="slider">
       <div class="slider-fill" id="sliderFill"></div>
-      <div class="slider-text" id="sliderText">Hold and drag the slider to the right</div>
+      <div class="slider-text" id="sliderText">Hold and drag to the right</div>
       <div class="slider-knob" id="sliderKnob" role="slider" aria-label="Slide to verify"><span>›</span></div>
     </div>
     <div class="gate-note">No quiz · <a href="#" id="gateSkip">Continue</a> · <a href="#" id="gateWhy">Why?</a></div>
@@ -189,11 +252,17 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- 登录弹窗 -->
 <div class="modal-mask" id="loginMask">
   <div class="modal glass">
-    <h3>Sign in to mox</h3>
-    <p class="dim">Sign in to use cloud sync, the AI assistant and the admin console. Any GitHub user works.</p>
+    <h3>Sign in to MoX</h3>
+    <div class="login-status" id="loginStatus">
+      <span class="dot"></span><span id="loginStatusText">Checking sign-in service…</span>
+    </div>
+    <div class="login-blocks">
+      <div class="lb"><span class="lbi">👤</span><div><b>Normal users</b>: cloud sync (multi-device config / command history in real time), AI assistant on call.</div></div>
+      <div class="lb"><span class="lbi">🛡️</span><div><b>Admins</b>: an "Admin console" entry appears after sign-in — for membership, billing, content.</div></div>
+      <div class="lb"><span class="lbi">🔒</span><div><b>Security</b>: sign in with GitHub; credentials stay local; cloud-sync data is client-encrypted.</div></div>
+    </div>
     <a class="gh" id="ghLoginBtn" href="#">Sign in with GitHub</a>
     <div class="or">or</div>
     <input id="tokInput" type="password" placeholder="Paste a GitHub Token (ghp_ / github_pat_)" autocomplete="off" />
@@ -202,6 +271,7 @@
       <button id="tokCancelBtn">Cancel</button>
     </div>
     <div class="msg" id="loginMsg"></div>
+    <div class="login-hint" id="loginHint"></div>
   </div>
 </div>
 
