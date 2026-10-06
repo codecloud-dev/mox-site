@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Mox%20Series-官方门户-8a7bff" alt="Mox Series">
-  <img src="https://img.shields.io/badge/Deploy-GitHub%20Pages-2088FF?logo=githubpages&logoColor=white" alt="GitHub Pages">
+  <img src="https://img.shields.io/badge/Deploy-Cloudflare%20Pages-2088FF?logo=cloudflare&logoColor=white" alt="Cloudflare Pages">
   <img src="https://img.shields.io/badge/Style-Liquid%20Glass-37d5d3" alt="液态玻璃">
 </p>
 
@@ -14,7 +14,7 @@
 
 ## 这是什么
 
-[mox-site](https://codecloud-dev.github.io/mox-site/) 是 **MoX 工具系列**的统一门户：纯静态单页、零依赖、零构建，部署在 GitHub Pages。
+[mox-site](https://codecloud-dev.github.io/mox-site/) 是 **MoX 工具系列**的统一门户：纯静态单页、零依赖、零构建，**主站部署在 Cloudflare Pages**（`mox-site.pages.dev`），GitHub Pages 仅作为镜像兜底。登录 / 云同步等动态能力由 `functions/`（Cloudflare Pages Functions）反代到 mox-id 后端，仅 Cloudflare 环境真正运行，GitHub Pages 镜像下相关接口会优雅降级。
 
 第一款产品是 **moxsh** —— Android 液态玻璃终端：Rust 自研内核，配一整套玻璃质感界面。
 
@@ -35,7 +35,7 @@
 
 ## 细节
 
-- 联系方式（QQ / 邮箱）默认隐藏，点击后由混淆值还原，源码中不含明文
+- 联系方式（QQ / 邮箱）为对外公开信息，页面默认折叠，需先通过滑块人机验证才显示，仅做轻度防爬；源码中直接以明文常量给出，不做「可逆混淆」假装隐藏
 - 下载 / 仓库链接分段 base64 拼接，页面源码不含明文账号名
 - 赞助通道：项目统一走爱发电（<https://afdian.com/a/cloudharbor>），仓库顶部 **Sponsor** 按钮已启用；官网页面内的赞助板块后续补齐。
 
