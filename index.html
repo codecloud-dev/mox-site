@@ -236,12 +236,17 @@
     <p>产品反馈、共建合作、获取安装包，都可以直接找到我们。为过滤打扰，两种方式各有一道轻门槛。</p>
     <div id="contactCards" class="show">
       <div class="citem glass">
-        <div class="label">邮箱 · 需过人机验证</div>
+        <div class="label">邮箱 · 需登录并通过真人验证</div>
         <div class="val" id="mailVal">••••••••••@163.com</div>
-        <div class="slider mini" id="mailSlider" aria-label="滑动验证后显示邮箱">
-          <div class="slider-fill" id="mailFill"></div>
-          <div class="slider-text" id="mailText">按住滑块拖到最右 · 显示邮箱</div>
-          <div class="slider-knob" id="mailKnob" role="slider" aria-label="滑动完成验证"><span>›</span></div>
+        <!-- 真实验证：Cloudflare Turnstile（服务端 siteverify 校验，非可绕过的前端滑块）。
+             把 data-sitekey 换成你在 Cloudflare 控制台创建的 Turnstile 站点密钥。 -->
+        <div class="cf-turnstile" id="mailCaptcha"
+             data-sitekey="__TURNSTILE_SITEKEY__"
+             data-callback="onContactCaptcha"
+             data-expired-callback="onContactExpired"
+             data-theme="auto"></div>
+        <div class="login-hint" id="contactLoginHint" style="display:none">
+          查看联系方式需先 <a href="#" id="contactLoginBtn">登录 MoX 账号</a>（GitHub 一键登录）
         </div>
         <button class="btn copy" id="mailCopyBtn" data-act="copy" data-target="mailVal" style="display:none">复制邮箱</button>
       </div>
@@ -323,5 +328,8 @@
 </div>
 
 <script src="app.js"></script>
+<!-- Cloudflare Turnstile：真实人机验证（服务端 siteverify 校验）。
+     需先在 Cloudflare 控制台开通 Turnstile，并把上方 data-sitekey 换成你的站点密钥。 -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </body>
 </html>

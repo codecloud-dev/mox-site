@@ -1,10 +1,9 @@
 /* GitHub 地址 base64 分段，避免源码明文账号 */
 var GH_BASE = (function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];return seg.map(function(x){return atob(x);}).join('');})();
 
-/* 站点公开联系方式（QQ / 邮箱）—— 本就是对外公开的联系渠道，不做「混淆」假装隐藏。
-   人机验证滑块仅做轻度防爬，并非保密手段；此处直接以明文常量给出，避免误导性「可逆混淆」。 */
-var QQ = '3042980037';
-var MAIL = 'z6666666662026@163.com';
+/* 联系方式（QQ / 邮箱）的原始值已移至服务端 functions/contact.js：
+   仅当「已登录会话 + 通过 Turnstile 真人验证」后，由 /contact 下发到前端，
+   不再以明文常量出现在任何客户端 JS 中，纯爬虫读不到。 */
 /* 指针光斑（rAF 节流：光斑层由 transform 合成驱动，更新零重绘） */
 var _lr=0,_lx=0,_ly=0,_le=null;
 function bindLight(el){el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();
@@ -92,31 +91,64 @@ function makeSlider(root,onPass){
   var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});},{threshold:.12});
   els.forEach(function(e){io.observe(e);});})();
 
-/* ===== 联系方式：邮箱过验证门，QQ 登记来历 ===== */
+/* ===== 联系方式：登录 + Turnstile 真人验证后，由服务端 /contact 下发 ===== */
 (function(){
-  /* 邮箱：内联滑块人机验证，本会话验证一次后直显 */
+  /* 邮箱：通过 Turnstile 真人验证 + 已登录后，服务端下发真实邮箱 */
   var mailVal=document.getElementById('mailVal'),mailSlider=document.getElementById('mailSlider'),
       mailCopy=document.getElementById('mailCopyBtn');
-  if(mailSlider){
-    var mailShown=false;
-    function showMail(){if(mailShown)return;mailShown=true;
-      mailVal.textContent=MAIL;mailSlider.style.display='none';
-      if(mailCopy)mailCopy.style.display='';}
-    try{if(sessionStorage.getItem('mox_mail_ok')==='1')showMail();}catch(e){}
-    makeSlider(mailSlider,function(){try{sessionStorage.setItem('mox_mail_ok','1');}catch(e){}showMail();});
-  }
-  /* QQ：先详细登记来历 + 用途，通过后显示并生成申请说明（添加好友时粘贴） */
   var qqVal=document.getElementById('qqVal'),askBtn=document.getElementById('qqAskBtn'),
       form=document.getElementById('qqForm'),fromEl=document.getElementById('qqFrom'),
       whyEl=document.getElementById('qqWhy'),submitBtn=document.getElementById('qqSubmitBtn'),
       done=document.getElementById('qqDone'),brief=document.getElementById('qqBrief');
+  var loginHint=document.getElementById('contactLoginHint');
+
+  function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
+  function showLoginRequired(){
+    if(loginHint)loginHint.style.display='';
+    if(mailSlider)mailSlider.style.display='none';
+  }
+  // Turnstile 回调（index.html 的 data-callback 指向 window.onContactCaptcha）
+  window.onContactCaptcha = function(token){
+    var t=getTok();
+    if(!t){ showLoginRequired(); showToast('请先登录后再查看联系方式'); return; }
+    fetch('/contact',{
+      method:'POST',
+      headers:{'content-type':'application/json','authorization':'Bearer '+t},
+      body:JSON.stringify({token:token})
+    }).then(function(r){
+      if(r.status===403) return r.json().then(function(d){throw d;});
+      if(!r.ok) throw {error:'network'};
+      return r.json();
+    }).then(function(d){
+      if(mailVal)mailVal.textContent=d.mail||'';
+      if(mailSlider)mailSlider.style.display='none';
+      if(mailCopy)mailCopy.style.display='';
+      if(loginHint)loginHint.style.display='none';
+      window.__contactQQ = d.qq||'';   // QQ 值暂存，等用户填完「来历与用途」再显示
+      if(askBtn)askBtn.style.display='';
+    }).catch(function(err){
+      if(err&&err.error==='login_required'){ showLoginRequired(); showToast('登录会话已失效，请重新登录'); }
+      else if(err&&err.error==='captcha_failed'){ showToast('验证未通过，请重试'); if(window.turnstile)window.turnstile.reset(); }
+      else { showToast('暂时无法获取联系方式，请稍后再试'); }
+    });
+  };
+  window.onContactExpired = function(){ /* Turnstile 令牌过期，等待用户重做 */ };
+
+  // 未登录时引导登录：点击触发已有的登录弹窗（#loginCta）
+  var loginBtn=document.getElementById('contactLoginBtn');
+  if(loginBtn)loginBtn.addEventListener('click',function(e){e.preventDefault();
+    var cta=document.getElementById('loginCta'); if(cta)cta.click();});
+
+  /* QQ：先详细登记来历 + 用途，通过后显示（值来自服务端下发） */
   if(!askBtn)return;
-  function pass(fr,wk){
-    qqVal.textContent=QQ;form.style.display='none';done.style.display='';
-    brief.textContent='我是'+fr+'，想'+wk+'。（来自 MoX 官网）';
+  function passQQ(){
+    var qq=window.__contactQQ||'';
+    if(!qq){ showToast('请先完成验证'); return; }
+    qqVal.textContent=qq; if(form)form.style.display='none'; if(done)done.style.display='';
+    if(brief)brief.textContent='我是'+fromEl.value.trim()+'，想'+whyEl.value.trim()+'。（来自 MoX 官网）';
     showToast('已生成申请说明，复制后添加即可');
   }
-  askBtn.addEventListener('click',function(){askBtn.style.display='none';form.style.display='';
+  askBtn.addEventListener('click',function(){askBtn.style.display='none'; if(form)form.style.display='';
     try{var s=JSON.parse(sessionStorage.getItem('mox_qq_info')||'null');
       if(s){fromEl.value=s.f;whyEl.value=s.w;}}catch(e){}
     if(fromEl)fromEl.focus();});
@@ -125,7 +157,7 @@ function makeSlider(root,onPass){
     if(fr.length<12){showToast('来历请写详细一点（不少于 12 字）');fromEl.focus();return;}
     if(wk.length<6){showToast('想说清楚你想做什么（不少于 6 字）');whyEl.focus();return;}
     try{sessionStorage.setItem('mox_qq_info',JSON.stringify({f:fr,w:wk}));}catch(e){}
-    pass(fr,wk);
+    passQQ();
   });
 })();
 
