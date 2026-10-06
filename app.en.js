@@ -1,11 +1,10 @@
 /* GitHub 地址 base64 分段，避免源码明文账号 */
 var GH_BASE = (function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];return seg.map(function(x){return atob(x);}).join('');})();
 
-/* 联系方式：混淆存储，明文不出现在页面源码中 */
-var _K=0x5d;
-var _QA=[110,109,105,111,100,101,109,109,110,106];
-var _MA=[39,107,107,107,107,107,107,107,107,107,111,109,111,107,29,108,107,110,115,62,50,48];
-function _d(a){var s='';for(var i=0;i<a.length;i++)s+=String.fromCharCode(a[i]^_K);return s;}
+/* 站点公开联系方式（QQ / 邮箱）—— 本就是对外公开的联系渠道，不做「混淆」假装隐藏。
+   人机验证滑块仅做轻度防爬，并非保密手段；此处直接以明文常量给出，避免误导性「可逆混淆」。 */
+var QQ = '3042980037';
+var MAIL = 'z6666666662026@163.com';
 /* Pointer glow (rAF-throttled; the glow layer is transform-composited, updates cause zero repaints) */
 var _lr=0,_lx=0,_ly=0,_le=null;
 function bindLight(el){el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();
@@ -101,7 +100,7 @@ function makeSlider(root,onPass){
   if(mailSlider){
     var mailShown=false;
     function showMail(){if(mailShown)return;mailShown=true;
-      mailVal.textContent=_d(_MA);mailSlider.style.display='none';
+      mailVal.textContent=MAIL;mailSlider.style.display='none';
       if(mailCopy)mailCopy.style.display='';}
     try{if(sessionStorage.getItem('mox_mail_ok')==='1')showMail();}catch(e){}
     makeSlider(mailSlider,function(){try{sessionStorage.setItem('mox_mail_ok','1');}catch(e){}showMail();});
@@ -113,7 +112,7 @@ function makeSlider(root,onPass){
       done=document.getElementById('qqDone'),brief=document.getElementById('qqBrief');
   if(!askBtn)return;
   function pass(fr,wk){
-    qqVal.textContent=_d(_QA);form.style.display='none';done.style.display='';
+    qqVal.textContent=QQ;form.style.display='none';done.style.display='';
     brief.textContent='I am '+fr+'; I want to '+wk+'. (from the MoX website)';
     showToast('Request note ready — copy it when adding');
   }

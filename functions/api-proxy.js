@@ -16,7 +16,12 @@
 //   - GET /me（探测）等简单请求：响应透传 worker 的 access-control-allow-origin: *
 //   - POST /auth/token、带 Authorization 的 GET /me：触发 preflight，
 //     由 onRequestOptions 以 204 + CORS 头应答（缺了它跨域 fetch 直接失败）
-const UPSTREAM = 'https://mox-id.3042980037.workers.dev';
+//
+// ⚠️ 注意：原 upstream 曾写为 mox-id-email.3042980037.workers.dev，其中 3042980037 是站长 QQ 号，
+// 会把私人联系方式绑进基础设施域名、公开泄露。现已改为中性自定义域 mox-id-email.moxsh.app。
+// 部署前请在 Cloudflare 把该自定义域（或你自有域的某子域）绑定到 mox-id-email Worker，
+// 否则请改回你实际可达的地址；切勿再使用含 QQ 号的 *.workers.dev 子域。
+const UPSTREAM = 'https://mox-id-email.moxsh.app';
 
 export const CORS_HEADERS = {
   'access-control-allow-origin': '*',
