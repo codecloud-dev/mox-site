@@ -11,24 +11,46 @@
 // JSON 解析失败 → 永远走 renderLogin —— 这就是「登过后还能再登」的根因。
 //
 // worker 侧通过 X-Forwarded-Host 生成与之匹配的 redirect_uri（见 mox-id publicBase）。
-// 本 Function 必须应答 CORS：任意域名（github.io 镜像、本地开发等）的前端都把
-// 登录请求发到这里——
-//   - GET /me（探测）等简单请求：响应透传 worker 的 access-control-allow-origin: *
+// 本 Function 必须应答 CORS：同源（官网镜像、本地开发等）的前端把登录请求发到这里——
+//   - GET /me（探测）等简单请求：响应透传 worker 的 CORS 头
 //   - POST /auth/token、带 Authorization 的 GET /me：触发 preflight，
 //     由 onRequestOptions 以 204 + CORS 头应答（缺了它跨域 fetch 直接失败）
 //
-// ⚠️ 注意：原 upstream 曾写为 mox-id-email.3042980037.workers.dev，其中 3042980037 是站长 QQ 号，
-// 会把私人联系方式绑进基础设施域名、公开泄露。现已改为中性自定义域 mox-id-email.moxsh.app。
-// 部署前请在 Cloudflare 把该自定义域（或你自有域的某子域）绑定到 mox-id-email Worker，
-// 否则请改回你实际可达的地址；切勿再使用含 QQ 号的 *.workers.dev 子域。
+// ⚠️ upstream 使用中性自定义域 mox-id-email.moxsh.app；切勿再使用含个人联系方式的
+// *.workers.dev 子域，避免把私人信息绑进基础设施域名、公开泄露。
 const UPSTREAM = 'https://mox-id-email.moxsh.app';
 
-export const CORS_HEADERS = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'authorization, content-type',
-  'access-control-max-age': '86400',
-};
+// 允许的跨域来源白名单：仅官网同域、GitHub Pages 镜像与本地开发可调用本反代。
+// 此前用 '*' 且同时透传会话 Cookie，构成 CSRF 向量；现收紧为显式白名单，
+// 命中来源才回显 access-control-allow-origin 并允许凭证，未命中则不发 CORS 头。
+const ALLOWED_ORIGINS = new Set([
+  'https://moxsh.app',
+  'https://www.moxsh.app',
+  'https://mox-site.pages.dev',
+  'https://codecloud-dev.github.io',
+]);
+
+function resolveCorsOrigin(origin) {
+  if (!origin) return null;
+  if (ALLOWED_ORIGINS.has(origin)) return origin;
+  // 本地开发：localhost / 127.0.0.1 任意端口
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
+  return null;
+}
+
+export function corsHeaders(origin) {
+  const allowed = resolveCorsOrigin(origin);
+  const h = {
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': 'authorization, content-type',
+    'access-control-max-age': '86400',
+  };
+  if (allowed) {
+    h['access-control-allow-origin'] = allowed;
+    h['access-control-allow-credentials'] = 'true';
+  }
+  return h;
+}
 
 export async function proxy(context) {
   const { request } = context;
@@ -45,8 +67,8 @@ export async function proxy(context) {
     const out = new Response(res.body, res);
     out.headers.set('X-Content-Type-Options', 'nosniff');
     out.headers.delete('X-Frame-Options'); // 302 跳转与 API 无框架风险，保留官网 _headers 的 DENY 于页面即可
-    // CORS：worker 已回 allow-origin:*，这里兜底补齐（含跨域 fetch 可读的自定义错误头）
-    for (const [k, v] of Object.entries(CORS_HEADERS)) {
+    // CORS：按请求来源回显白名单内的 origin（未命中则不发 CORS 头，避免 CSRF）
+    for (const [k, v] of Object.entries(corsHeaders(request.headers.get('origin')))) {
       if (!out.headers.has(k)) out.headers.set(k, v);
     }
     return out;
@@ -54,11 +76,12 @@ export async function proxy(context) {
     // 后端不可达时返回可读 JSON 错误，避免裸 404/HTML 让前端误判
     return new Response(
       JSON.stringify({ error: 'auth_proxy_unavailable', path: url.pathname, detail: String(e) }),
-      { status: 502, headers: { 'content-type': 'application/json; charset=utf-8', ...CORS_HEADERS } }
+      { status: 502, headers: { 'content-type': 'application/json; charset=utf-8', ...corsHeaders(request.headers.get('origin')) } }
     );
   }
 }
 
-export const pgOptions = () => new Response(null, { status: 204, headers: CORS_HEADERS });
+export const pgOptions = (ctx) =>
+  new Response(null, { status: 204, headers: corsHeaders(ctx?.request?.headers?.get('origin')) });
 export const pgGet = (ctx) => proxy(ctx);
 export const pgPost = (ctx) => proxy(ctx);
