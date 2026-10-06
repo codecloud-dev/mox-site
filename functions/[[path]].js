@@ -6,7 +6,7 @@
 //      Pages 侧不可能预知，只能靠未知路径转发）。
 // Pages 路由取最具体匹配：/me、/health、/auth/*、/membership/* 等专属
 // Function 优先于本文件；本文件只接管其余路径。
-import { proxy, CORS_HEADERS } from './api-proxy.js';
+import { proxy, corsHeaders } from './api-proxy.js';
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -49,4 +49,5 @@ export async function onRequestGet(context) {
 
 // 静态站没有任何 POST 目标：POST 一律转发 worker（管理后台 assistant 等 API）
 export const onRequestPost = (ctx) => proxy(ctx);
-export const onRequestOptions = () => new Response(null, { status: 204, headers: CORS_HEADERS });
+export const onRequestOptions = (ctx) =>
+  new Response(null, { status: 204, headers: corsHeaders(ctx?.request?.headers?.get('origin')) });
