@@ -69,12 +69,32 @@ jobs:
           for hdr in 'x-frame-options: DENY' 'x-content-type-options: nosniff' 'referrer-policy:' 'strict-transport-security:' 'permissions-policy:'; do
             echo "$H" | grep -qi "$hdr" && echo "OK: $hdr" || { echo "FAIL: 缺 $hdr"; S=1; }
           done
-          PG=$(curl -sS -m 20 "$BASE/")
-          echo "$PG" | grep -q 'Content-Security-Policy' && echo "OK: CSP meta" || { echo "FAIL: 首页缺 CSP"; S=1; }
-          echo "$PG" | grep -q 'src="app.js"' && echo "OK: 外链 app.js" || { echo "FAIL: app.js 未外链"; S=1; }
-          echo "$PG" | grep -q '<script>' && { echo "FAIL: 仍有内联脚本"; S=1; } || echo "OK: 无内联脚本"
+          # 页面内容检查：CSP meta / app.js 外链 / 无内联脚本。
+          # 静态资源边缘传播有延迟，单次抓取可能命中尚未就绪的边缘节点，
+          # 故与登录反代检查一样采用重试，避免传播竞态造成的误判 FAIL。
+          CSP_OK=0; APP_OK=0; NOSCRIPT_OK=1
+          for i in 1 2 3 4 5 6 8 10 12; do
+            PG=$(curl -sS -m 20 "$BASE/" 2>/dev/null || true)
+            if [ -z "$PG" ]; then echo "首页抓取为空，第 $i 次重试…"; sleep 8; continue; fi
+            echo "$PG" | grep -q 'Content-Security-Policy' && CSP_OK=1
+            echo "$PG" | grep -q 'src="app.js"' && APP_OK=1
+            if echo "$PG" | grep -q '<script>'; then NOSCRIPT_OK=0; else NOSCRIPT_OK=1; fi
+            if [ "$CSP_OK" = 1 ] && [ "$APP_OK" = 1 ] && [ "$NOSCRIPT_OK" = 1 ]; then
+              echo "首页内容检查通过（第 $i 次）"; break
+            fi
+            echo "首页内容尚未就绪（CSP=$CSP_OK app=$APP_OK noscript=$NOSCRIPT_OK），第 $i 次重试…"; sleep 8
+          done
+          [ "$CSP_OK" = 1 ] && echo "OK: CSP meta" || { echo "FAIL: 首页缺 CSP"; S=1; }
+          [ "$APP_OK" = 1 ] && echo "OK: 外链 app.js" || { echo "FAIL: app.js 未外链"; S=1; }
+          [ "$NOSCRIPT_OK" = 1 ] && echo "OK: 无内联脚本" || { echo "FAIL: 仍有内联脚本"; S=1; }
+          # 静态资源可达性：同样带重试，避免边缘传播窗口内的瞬时 404/000
           for f in app.js app.en.js index.css index.en.css; do
-            c=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' "$BASE/$f")
+            c=""
+            for i in 1 2 3 4 5 6; do
+              c=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' "$BASE/$f" 2>/dev/null || echo 000)
+              [ "$c" = "200" ] && break
+              sleep 5
+            done
             [ "$c" = "200" ] && echo "OK: $f 200" || { echo "FAIL: $f -> $c"; S=1; }
           done
           # 登录链路同域反代：start 应 302 到 GitHub 授权页（Functions 生效有传播延迟，重试）
