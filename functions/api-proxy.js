@@ -16,9 +16,13 @@
 //   - POST /auth/token、带 Authorization 的 GET /me：触发 preflight，
 //     由 onRequestOptions 以 204 + CORS 头应答（缺了它跨域 fetch 直接失败）
 //
-// ⚠️ upstream 使用中性自定义域 mox-id-email.moxsh.app；切勿再使用含个人联系方式的
-// *.workers.dev 子域，避免把私人信息绑进基础设施域名、公开泄露。
-const UPSTREAM = 'https://mox-id-email.moxsh.app';
+// ⚠️ 上游连接终点：mox-id 身份后端（私有仓库 codecloud-dev/mox-id 部署）。
+// 正常情况下应使用中性自定义域 mox-id-email.moxsh.app；该域在 Cloudflare 上被摘、
+// 且 CI 令牌缺 Workers Custom Domains:Edit 权限（10405）无法自动重建，登录全断。
+// 临时回退到 Worker 标准地址 workers.dev（2026-10-06），待 Cloudflare 侧恢复
+// mox-id-email.moxsh.app 自定义域后【必须改回中性域】，否则会暴露站长 QQ 号。
+// OAuth 回调用官网域名（X-Forwarded-Host），与此终点无关，故仅需改这里即可恢复登录。
+const UPSTREAM = 'https://mox-id.3042980037.workers.dev';
 
 // 允许的跨域来源白名单：仅官网同域、GitHub Pages 镜像与本地开发可调用本反代。
 // 此前用 '*' 且同时透传会话 Cookie，构成 CSRF 向量；现收紧为显式白名单，
