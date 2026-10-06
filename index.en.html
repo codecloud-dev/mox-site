@@ -220,12 +220,16 @@
     <p>Feedback, collaboration, or getting an APK — just reach us. Each channel has a light gate to filter noise.</p>
     <div id="contactCards" class="show">
       <div class="citem glass">
-        <div class="label">Email · human verification required</div>
+        <div class="label">Email · sign in &amp; pass human verification</div>
         <div class="val" id="mailVal">••••••••••@163.com</div>
-        <div class="slider mini" id="mailSlider" aria-label="Slide to verify and reveal email">
-          <div class="slider-fill" id="mailFill"></div>
-          <div class="slider-text" id="mailText">Hold &amp; slide right · reveal email</div>
-          <div class="slider-knob" id="mailKnob" role="slider" aria-label="Slide to verify"><span>›</span></div>
+        <!-- Real CAPTCHA: Cloudflare Turnstile (server-side siteverify). Replace data-sitekey with yours. -->
+        <div class="cf-turnstile" id="mailCaptcha"
+             data-sitekey="__TURNSTILE_SITEKEY__"
+             data-callback="onContactCaptcha"
+             data-expired-callback="onContactExpired"
+             data-theme="auto"></div>
+        <div class="login-hint" id="contactLoginHint" style="display:none">
+          To view contacts, <a href="#" id="contactLoginBtn">sign in to MoX</a> first (GitHub one-click)
         </div>
         <button class="btn copy" id="mailCopyBtn" data-act="copy" data-target="mailVal" style="display:none">Copy email</button>
       </div>
@@ -306,5 +310,8 @@
 </div>
 
 <script src="app.en.js"></script>
+<!-- Cloudflare Turnstile: real human verification (server-side siteverify).
+     Enable Turnstile in the Cloudflare dashboard and replace the data-sitekey above with your site key. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </body>
 </html>
