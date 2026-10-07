@@ -26,6 +26,9 @@
     <a href="#account">Account</a>
     <a href="#download">Download</a>
     <a href="#plans">Plans</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#vision">Vision</a>
+    <a href="#community">Community</a>
     <a href="#contact">Contact</a>
     <a class="lang" href="index.html">中文</a>
     <span id="authSlot"></span>
@@ -80,7 +83,7 @@
       <a class="more" href="#account">Account & cloud sync ↓</a>
     </div>
     <div class="card glass fadeup">
-      <span class="status dev">✅ Open source · WIP</span>
+      <span class="status dev">✅ Open source · v1.0</span>
       <h3>moxwebgpu</h3>
       <p>A zero-dependency WebGPU GPGPU framework: typed tensors, raw WGSL kernels, a lazy compute graph. Compute pushed to the visitor's GPU.</p>
       <a class="more" href="webgpu/">Live demo →</a>
@@ -183,6 +186,170 @@
       <h3>moxcode</h3>
       <p>A lightweight mobile IDE: terminal + editor + run-preview in one.</p>
       <div class="note">※ Early concept; may proceed, may be dropped.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Roadmap ===== -->
+<section id="roadmap" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">Roadmap · The MoX journey</div>
+    <p class="sec-desc">We build "desktop-grade tools in your pocket" phase by phase. What's shipped already works; what's in progress is being polished; what's planned is what's next.</p>
+  </div>
+  <div class="timeline">
+    <div class="tl-item done fadeup">
+      <div class="tl-dot"></div>
+      <div class="tl-card glass">
+        <div class="tl-top"><span class="tl-phase">Phase 1</span><span class="status on">✅ Shipped</span></div>
+        <h3>moxsh 1.0 · Liquid-glass terminal</h3>
+        <p>A liquid-glass terminal on Android: Rust core, fully Termux-compatible, no root, install and go.</p>
+        <ul class="tl-list">
+          <li>Rust PTY / VT parsing / scrollback / render scheduling</li>
+          <li>Termux-compatible + PRoot distros (Ubuntu / Debian / Kali / Alpine)</li>
+          <li>Hardened IPC: challenge-response + HMAC-SHA256 auth</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tl-item done fadeup">
+      <div class="tl-dot"></div>
+      <div class="tl-card glass">
+        <div class="tl-top"><span class="tl-phase">Phase 2</span><span class="status on">✅ Shipped</span></div>
+        <h3>mox-id · Unified identity &amp; cloud sync</h3>
+        <p>The MoX account base: one-click GitHub login; cloud sync, membership, billing, admin console all flow from here.</p>
+        <ul class="tl-list">
+          <li>GitHub OAuth login, credentials stay local</li>
+          <li>Multi-device config / command history real-time sync (client-encrypted)</li>
+          <li>Membership tiers, billing reconciliation, hidden admin console</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tl-item done fadeup">
+      <div class="tl-dot"></div>
+      <div class="tl-card glass">
+        <div class="tl-top"><span class="tl-phase">Phase 3</span><span class="status on">✅ Shipped</span></div>
+        <h3>moxwebgpu 1.0 · WebGPU compute</h3>
+        <p>A zero-dependency WebGPU GPGPU framework: typed tensors, raw WGSL kernels, a lazy compute graph — compute pushed to the visitor's GPU.</p>
+        <ul class="tl-list">
+          <li>30+ ops + arbitrary-axis reduction, 27 real GPU e2e</li>
+          <li>Autograd (reverse mode, stacked on the lazy graph)</li>
+          <li>npm publish + live demo + docs site</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tl-item active fadeup">
+      <div class="tl-dot"></div>
+      <div class="tl-card glass">
+        <div class="tl-top"><span class="tl-phase">Phase 4</span><span class="status dev">🔄 In progress</span></div>
+        <h3>moxsh performance &amp; AI</h3>
+        <p>Push the flagship terminal further: higher frame rate, lower power, and on-device AI that actually runs.</p>
+        <ul class="tl-list">
+          <li>120Hz render + font atlas reuse</li>
+          <li>NEON-vectorized hot paths</li>
+          <li>On-device AI inference (AiProvider.Local reserved)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tl-item fadeup">
+      <div class="tl-dot"></div>
+      <div class="tl-card glass">
+        <div class="tl-top"><span class="tl-phase">Phase 5</span><span class="status plan">📋 Planned</span></div>
+        <h3>.mox ecosystem &amp; plugin market</h3>
+        <p>Make plugins, themes and scripts distributable and verifiable: unified schema, signed distribution, one-tap install.</p>
+        <ul class="tl-list">
+          <li>Unified plugin / theme schema and version markers</li>
+          <li>HMAC-SHA256 signed distribution &amp; verification</li>
+          <li>Official plugin catalog and community submissions</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tl-item fadeup">
+      <div class="tl-dot"></div>
+      <div class="tl-card glass">
+        <div class="tl-top"><span class="tl-phase">Phase 6</span><span class="status plan">💡 TBD</span></div>
+        <h3>moxbox / moxcode</h3>
+        <p>Bring more desktop-grade power to your pocket: a file & system suite, a lightweight mobile IDE. Whether to proceed depends on actual releases.</p>
+        <ul class="tl-list">
+          <li>moxbox: unified storage / process / network management</li>
+          <li>moxcode: terminal + editor + run-preview in one</li>
+          <li>※ Planned · TBD, may ship or may never</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Vision ===== -->
+<section id="vision" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">Our vision</div>
+    <p class="sec-desc">Not another product off the "App factory" line. What MoX wants is simple, but we take it seriously.</p>
+  </div>
+  <div class="vision-grid">
+    <div class="vision glass fadeup">
+      <div class="vico"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M8 12l2.5 2.5L16 9"/></svg></div>
+      <blockquote>Desktop-grade power, in your palm</blockquote>
+      <p>A phone isn't a "make-do small screen" — it's a pocket workstation that runs a real terminal and real GPU compute. We rebuild every detail to that standard.</p>
+    </div>
+    <div class="vision glass fadeup">
+      <div class="vico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <blockquote>Compute pushed to your device</blockquote>
+      <p>Privacy first: cloud-sync data is client-encrypted before upload — the server never sees plaintext. If it can run locally, it stays off the cloud.</p>
+    </div>
+    <div class="vision glass fadeup">
+      <div class="vico"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg></div>
+      <blockquote>Indie dev + AI, together</blockquote>
+      <p>Small and sharp, fast to iterate. One person owns the quality end-to-end; AI eats the repetitive work so ideas ship faster.</p>
+    </div>
+    <div class="vision glass fadeup">
+      <div class="vico"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <blockquote>Open source, transparent, auditable</blockquote>
+      <p>Every repo is public; security headers and CSP are verified by CI on every deploy. What you see is what runs on your device.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Community ===== -->
+<section id="community" class="wrap">
+  <div class="sec-head fadeup">
+    <div class="sec-title">Community &amp; build together</div>
+    <p class="sec-desc">Small indie projects fear being unknown most. Whether you're a user, a developer, or just curious — here's how to find us and help more people discover it.</p>
+  </div>
+  <div class="community-grid">
+    <div class="comm glass fadeup">
+      <div class="cico"><svg viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-1-2.6c3-.3 6-1.5 6-6.6a5 5 0 0 0-1.4-3.5A4.7 4.7 0 0 0 17 .5 13 13 0 0 0 12 2.5 13 13 0 0 0 7 .5 4.7 4.7 0 0 0 4.6 4a5 5 0 0 0-1.4 3.5c0 5 3 6.3 6 6.6a3.4 3.4 0 0 0-1 2.6V22"/></svg></div>
+      <h3>GitHub org</h3>
+      <p>All source, build artifacts and issues live here. A Star, a Watch, a PR — all real support.</p>
+      <a class="link" href="https://github.com/codecloud-dev" target="_blank" rel="noopener">codecloud-dev →</a>
+    </div>
+    <div class="comm glass fadeup">
+      <div class="cico"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg></div>
+      <h3>Star it</h3>
+      <p>If it helps you, drop a Star ★. For an indie project, every Star is a chance to be seen.</p>
+      <a class="link" href="https://github.com/codecloud-dev/moxsh-terminal" target="_blank" rel="noopener">Star moxsh →</a>
+    </div>
+    <div class="comm glass fadeup">
+      <div class="cico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <h3>Discuss &amp; feedback</h3>
+      <p>Something's off, an idea, or want to build together? Open an Issue or Discussion — we read them.</p>
+      <a class="link" href="https://github.com/codecloud-dev/moxsh-terminal/issues" target="_blank" rel="noopener">Open an Issue →</a>
+    </div>
+    <div class="comm glass fadeup">
+      <div class="cico"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></div>
+      <h3>Support on Afdian</h3>
+      <p>If MoX helped you, a coffee-sized tip keeps it going further. The project uses Afdian for sponsorship.</p>
+      <a class="link" href="https://afdian.com/a/cloudharbor" target="_blank" rel="noopener">Go to Afdian →</a>
+    </div>
+    <div class="comm glass fadeup">
+      <div class="cico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+      <h3>QQ group</h3>
+      <p>Want to chat live, grab an APK, meet like-minded folks? Request to join via the contacts below.</p>
+      <a class="link" href="#contact">See contacts →</a>
+    </div>
+    <div class="comm glass fadeup">
+      <div class="cico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></div>
+      <h3>Email</h3>
+      <p>Business, press, or collaboration invites — email is the most direct.</p>
+      <a class="link" href="#contact">See email →</a>
     </div>
   </div>
 </section>
