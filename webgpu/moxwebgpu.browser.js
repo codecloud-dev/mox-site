@@ -36,6 +36,8 @@ var MoxWebGPU = (() => {
     argReducePhase1Wgsl: () => argReducePhase1Wgsl,
     argReducePhase2Wgsl: () => argReducePhase2Wgsl,
     asTypedArray: () => asTypedArray,
+    axisReduceWgsl: () => axisReduceWgsl,
+    backward: () => backward,
     binary1DWgsl: () => binary1DWgsl,
     binary2DWgsl: () => binary2DWgsl,
     binaryScalarWgsl: () => binaryScalarWgsl,
@@ -45,6 +47,7 @@ var MoxWebGPU = (() => {
     createNode: () => createNode,
     dtypeInfo: () => dtypeInfo,
     encode2DUniform: () => encode2DUniform,
+    encodeAxisUniform: () => encodeAxisUniform,
     encodeCopyUniform: () => encodeCopyUniform,
     encodeMatmulUniform: () => encodeMatmulUniform,
     encodeNUniform: () => encodeNUniform,
@@ -58,6 +61,7 @@ var MoxWebGPU = (() => {
     reducePhase1Wgsl: () => reducePhase1Wgsl,
     reducePhase2Wgsl: () => reducePhase2Wgsl,
     softmaxWgsl: () => softmaxWgsl,
+    sumTo: () => sumTo,
     topoSort: () => topoSort,
     transpose2DWgsl: () => transpose2DWgsl,
     unaryWgsl: () => unaryWgsl
@@ -87,9 +91,21 @@ var MoxWebGPU = (() => {
   }
 
   // src/core/buffer.ts
-  var STORAGE_USAGE = GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST;
-  var UNIFORM_USAGE = GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST;
-  var STAGING_USAGE = GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST;
+  var GPUBufferUsageFlags = typeof GPUBufferUsage !== "undefined" ? GPUBufferUsage : {
+    MAP_READ: 1,
+    MAP_WRITE: 2,
+    COPY_SRC: 4,
+    COPY_DST: 8,
+    INDEX: 16,
+    VERTEX: 32,
+    UNIFORM: 64,
+    STORAGE: 128,
+    INDIRECT: 256,
+    QUERY_RESOLVE: 512
+  };
+  var STORAGE_USAGE = GPUBufferUsageFlags.STORAGE | GPUBufferUsageFlags.COPY_SRC | GPUBufferUsageFlags.COPY_DST;
+  var UNIFORM_USAGE = GPUBufferUsageFlags.UNIFORM | GPUBufferUsageFlags.COPY_DST;
+  var STAGING_USAGE = GPUBufferUsageFlags.MAP_READ | GPUBufferUsageFlags.COPY_DST;
   function align4(n) {
     return n + 3 & ~3;
   }
@@ -343,16 +359,21 @@ ${wgsl}`);
       const plan = n.op.build(inputShapes, inputDtypes, n.attrs);
       const output = this.ctx.pool.acquire(Math.max(1, numElements(n.shape)), n.dtype);
       let prevTemp = null;
+      const tempBufs = [];
       const scratchUbos = [];
       const encoder = device.createCommandEncoder();
       for (let s = 0; s < plan.steps.length; s++) {
         const step = plan.steps[s];
         const isLast = s === plan.steps.length - 1;
         const writesOutput = isLast || step.bindings.some((b) => b.kind === "rw" && b.output === true);
-        const outBuf = writesOutput ? output : this.ctx.pool.acquire(
-          Math.max(1, step.tempOutputElements(n.shape)),
-          step.tempOutputDtype ?? n.dtype
-        );
+        const outBuf = writesOutput ? output : (() => {
+          const temp = this.ctx.pool.acquire(
+            Math.max(1, step.tempOutputElements(n.shape)),
+            step.tempOutputDtype ?? n.dtype
+          );
+          tempBufs.push(temp);
+          return temp;
+        })();
         const entries = [];
         for (const b of step.bindings) {
           const bindingIndex = entries.length;
@@ -395,9 +416,8 @@ ${wgsl}`);
           nodeInput.buffer = null;
         }
       }
-      if (prevTemp) {
-        this.ctx.pool.release(prevTemp);
-        prevTemp = null;
+      for (const temp of tempBufs) {
+        this.ctx.pool.release(temp);
       }
       n.buffer = output;
     }
@@ -424,6 +444,83 @@ ${wgsl}`);
     }
   };
 
+  // src/graph/autograd.ts
+  function reverseTopo(root) {
+    const order = [];
+    const seen = /* @__PURE__ */ new Set();
+    const visit = (n) => {
+      if (seen.has(n)) return;
+      seen.add(n);
+      for (const inp of n.inputs) {
+        if (inp.kind !== "leaf") visit(inp);
+      }
+      order.push(n);
+    };
+    visit(root);
+    return order;
+  }
+  function onesLike(t) {
+    return t.toFloat().mul(0).add(1);
+  }
+  function sumTo(t, shape) {
+    let cur = t;
+    let curShape = cur.shape;
+    while (curShape.length > shape.length) {
+      cur = cur.sum(0);
+      curShape = cur.shape;
+    }
+    const outShape = [];
+    for (let d = 0; d < shape.length; d++) {
+      if (curShape[d] !== shape[d]) {
+        cur = cur.sum(d);
+        curShape = cur.shape;
+        outShape.push(1);
+      } else {
+        outShape.push(curShape[d]);
+      }
+    }
+    return cur.reshape(...outShape);
+  }
+  function wrap(node, ctx) {
+    return new Tensor(ctx, node.shape, node.dtype, node, null);
+  }
+  function backward(loss) {
+    const root = loss.node;
+    if (!root) return;
+    const order = reverseTopo(root);
+    const gradOf = /* @__PURE__ */ new Map();
+    gradOf.set(root, onesLike(loss));
+    for (let i = order.length - 1; i >= 0; i--) {
+      const node = order[i];
+      const g = gradOf.get(node);
+      if (!g) continue;
+      const inputs = node.inputs.map((inp) => {
+        if (inp.kind === "leaf") return inp.tensor;
+        return wrap(inp, loss.ctx);
+      });
+      const output = wrap(node, loss.ctx);
+      const fn = node.op.backward;
+      const grads = fn ? fn(inputs, output, g, node.attrs) : inputs.map(() => null);
+      for (let j = 0; j < node.inputs.length; j++) {
+        const gi = grads[j];
+        if (!gi) continue;
+        let target;
+        if (node.inputs[j].kind === "leaf") {
+          target = node.inputs[j].tensor;
+        } else {
+          target = node.inputs[j];
+        }
+        const prev = gradOf.get(target);
+        gradOf.set(target, prev ? prev.add(gi) : gi);
+      }
+    }
+    for (const [key, g] of gradOf) {
+      if (key instanceof Tensor && key.requiresGrad) {
+        key.grad = g;
+      }
+    }
+  }
+
   // src/tensor/tensor.ts
   var Tensor = class _Tensor {
     constructor(ctx, shape, dtype, node, data) {
@@ -432,9 +529,25 @@ ${wgsl}`);
       this.dtype = dtype;
       this.node = node;
       this.data = data;
+      /** Whether `backward()` should populate `.grad` for this leaf. */
+      this.requiresGrad = false;
+      /** Accumulated gradient after `backward()`; null until then. */
+      this.grad = null;
     }
     get size() {
       return numElements(this.shape);
+    }
+    /** Mark this leaf as differentiable and return it (chainable). */
+    withGrad() {
+      this.requiresGrad = true;
+      return this;
+    }
+    /**
+     * Reverse-mode autodiff: fills `.grad` on every `requiresGrad` leaf.
+     * Builds the gradient graph lazily — no GPU work until a grad is read.
+     */
+    backward() {
+      backward(this);
     }
     get ndim() {
       return this.shape.length;
@@ -677,10 +790,16 @@ ${wgsl}`);
 struct OpUniforms { n: u32, _p0: u32, scalar: f32, identity: f32 };
 @group(0) @binding(0) var<uniform> uniforms: OpUniforms;`;
   }
+  var identityTyped = (t) => t === "f32" ? "uniforms.identity" : `${t}(uniforms.identity)`;
   function uni2D() {
     return `
 struct OpUniforms { rows: u32, cols: u32, scalar: f32, identity: f32 };
 @group(0) @binding(0) var<uniform> uniforms: OpUniforms;`;
+  }
+  function uniAxis() {
+    return `
+struct AxisUniforms { n_out: u32, inner: u32, dim: u32, scalar: f32, identity: f32, _p0: f32, _p1: f32, _p2: f32 };
+@group(0) @binding(0) var<uniform> uniforms: AxisUniforms;`;
   }
   function uniCopy() {
     return `
@@ -784,7 +903,7 @@ fn main(
   @builtin(workgroup_id) w: vec3u,
 ) {
   let start = w.x * ${WORKGROUP_SIZE}u * ${REDUCE_CHUNK}u;
-  var acc = uniforms.identity;
+  var acc = ${identityTyped(t)};
   for (var c: u32 = 0u; c < ${REDUCE_CHUNK}u; c++) {
     let idx = start + l.x + c * ${WORKGROUP_SIZE}u;
     if (idx < uniforms.n) {
@@ -819,7 +938,7 @@ fn main(
   @builtin(global_invocation_id) g: vec3u,
   @builtin(local_invocation_id) l: vec3u,
 ) {
-  var acc = uniforms.identity;
+  var acc = ${identityTyped(t)};
   // Sequential over partials (partials count is small).
   for (var i: u32 = l.x; i < uniforms.n; i += ${WORKGROUP_SIZE}u) {
     acc = ${combine("acc", "partial[i]")};
@@ -977,7 +1096,7 @@ fn main(
 ) {
   let cols = uniforms.cols;
   let base = w.x * cols;
-  var acc = uniforms.identity;
+  var acc = ${identityTyped(t)};
   for (var i: u32 = l.x; i < cols; i += ${WORKGROUP_SIZE}u) {
     acc = ${combine("acc", "input[base + i]")};
   }
@@ -995,6 +1114,26 @@ fn main(
   if (l.x == 0u) {
     out[w.x] = ${epilogue ? epilogue("smem[0]") : "smem[0]"};
   }
+}`;
+  }
+  function axisReduceWgsl(dtype, combine, epilogue) {
+    const t = dtypeInfo(dtype).wgsl;
+    return `
+${uniAxis()}
+${BIND_READ("input", t, 1)}
+${BIND_RW("out", t, 2)}
+@compute @workgroup_size(${WORKGROUP_SIZE})
+fn main(@builtin(global_invocation_id) g: vec3u) {
+  let oid = g.x;
+  if (oid >= uniforms.n_out) { return; }
+  let o = oid / uniforms.inner;
+  let i = oid % uniforms.inner;
+  var acc = ${identityTyped(t)};
+  let base = o * uniforms.dim * uniforms.inner + i;
+  for (var k: u32 = 0u; k < uniforms.dim; k++) {
+    acc = ${combine("acc", "input[base + k * uniforms.inner]")};
+  }
+  out[oid] = ${epilogue ? epilogue("acc") : "acc"};
 }`;
   }
   function softmaxWgsl(dtype) {
@@ -1108,6 +1247,16 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
     dv.setUint32(4, cols, true);
     dv.setFloat32(8, scalar, true);
     dv.setFloat32(12, identity, true);
+    return b;
+  }
+  function encodeAxisUniform(nOut, inner, dim, scalar = 0, identity = 0) {
+    const b = new ArrayBuffer(32);
+    const dv = new DataView(b);
+    dv.setUint32(0, nOut, true);
+    dv.setUint32(4, inner, true);
+    dv.setUint32(8, dim, true);
+    dv.setFloat32(12, scalar, true);
+    dv.setFloat32(16, identity, true);
     return b;
   }
   function encodeMatmulUniform(m, n, k) {
@@ -1272,6 +1421,17 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
   // src/tensor/ops/reduce.ts
   var WG2 = 64;
   var CHUNK = 8;
+  var INT32_MIN = -2147483648;
+  var INT32_MAX = 2147483647;
+  var UINT32_MAX = 4294967295;
+  function identityOf(spec, dtype) {
+    return typeof spec.identityValue === "function" ? spec.identityValue(dtype) : spec.identityValue;
+  }
+  function checkFloatOnly(spec, dtype, op) {
+    if (spec.floatOnly && dtype !== "f32") {
+      throw new Error(`moxwebgpu: ${op} requires f32 input (cast first: t.toFloat())`);
+    }
+  }
   function globalReduceOpDef(name, spec) {
     return {
       name,
@@ -1279,6 +1439,7 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
       outDtype: (dtypes) => dtypes[0],
       build: (shapes, dtypes) => {
         const dtype = dtypes[0];
+        checkFloatOnly(spec, dtype, name);
         const n = numElements(shapes[0]);
         const nw1 = Math.max(1, Math.ceil(n / (WG2 * CHUNK)));
         const steps = [
@@ -1286,7 +1447,7 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
             key: `${name}-p1:${dtype}`,
             wgsl: reducePhase1Wgsl(dtype, spec.combine),
             bindings: [{ kind: "uniform" }, { kind: "read", input: 0 }, { kind: "rw", temp: true }],
-            uniforms: () => encodeNUniform(n, 0, spec.identityValue),
+            uniforms: () => encodeNUniform(n, 0, identityOf(spec, dtype)),
             workgroups: () => [nw1, 1, 1],
             tempOutputElements: () => nw1
           },
@@ -1294,7 +1455,7 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
             key: `${name}-p2:${dtype}`,
             wgsl: reducePhase2Wgsl(dtype, spec.combine, spec.epilogue),
             bindings: [{ kind: "uniform" }, { kind: "read", temp: true }, { kind: "rw", output: true }],
-            uniforms: () => encodeNUniform(nw1, spec.epilogue ? n : 0, spec.identityValue),
+            uniforms: () => encodeNUniform(nw1, spec.epilogue ? n : 0, identityOf(spec, dtype)),
             workgroups: () => [1, 1, 1]
           }
         ];
@@ -1345,6 +1506,7 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
       outDtype: (dtypes) => dtypes[0],
       build: (shapes, dtypes) => {
         const dtype = dtypes[0];
+        checkFloatOnly(spec, dtype, name);
         const shape = shapes[0];
         const rows = shape.length <= 1 ? 1 : numElements(shape) / shape[shape.length - 1];
         const cols = shape[shape.length - 1];
@@ -1353,48 +1515,101 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
           key: `${name}-axis:${dtype}`,
           wgsl: reduceLastAxisWgsl(dtype, spec.combine, spec.epilogue),
           bindings: [{ kind: "uniform" }, { kind: "read", input: 0 }, { kind: "rw", output: true }],
-          uniforms: () => encode2DUniform(rows, cols, divideBy, spec.identityValue),
+          uniforms: () => encode2DUniform(rows, cols, divideBy, identityOf(spec, dtype)),
           workgroups: () => [rows, 1, 1]
         };
         return { steps: [step] };
       }
     };
   }
-  var sumDef = globalReduceOpDef("sum", {
-    identityValue: 0,
-    combine: (a, b) => `(${a} + ${b})`
-  });
+  function normAxis(axis, rank) {
+    const r = Math.max(1, rank);
+    const a = Math.trunc(axis);
+    return (a % r + r) % r;
+  }
+  function axisReduceOpDef(name, spec) {
+    return {
+      name,
+      outShape: (shapes, attrs) => {
+        const s = shapes[0];
+        if (s.length <= 1) return [1];
+        const ax = normAxis(attrs.axis, s.length);
+        return s.filter((_, d) => d !== ax);
+      },
+      outDtype: (dtypes) => dtypes[0],
+      build: (shapes, dtypes, attrs) => {
+        const dtype = dtypes[0];
+        checkFloatOnly(spec, dtype, name);
+        const shape = shapes[0];
+        const ax = normAxis(attrs.axis, shape.length);
+        let outer = 1;
+        let inner = 1;
+        for (let d = 0; d < ax; d++) outer *= shape[d];
+        for (let d = ax + 1; d < shape.length; d++) inner *= shape[d];
+        const dim = shape[ax];
+        const nOut = outer * inner;
+        const divideBy = spec.epilogue ? dim : 0;
+        const step = {
+          key: `${name}-gaxis:${dtype}`,
+          wgsl: axisReduceWgsl(dtype, spec.combine, spec.epilogue),
+          bindings: [{ kind: "uniform" }, { kind: "read", input: 0 }, { kind: "rw", output: true }],
+          uniforms: () => encodeAxisUniform(nOut, inner, dim, divideBy, identityOf(spec, dtype)),
+          workgroups: () => [Math.max(1, Math.ceil(nOut / WG2)), 1, 1]
+        };
+        return { steps: [step] };
+      }
+    };
+  }
+  var sumCombine = (a, b) => `(${a} + ${b})`;
+  var maxCombine = (a, b) => `max(${a}, ${b})`;
+  var minCombine = (a, b) => `min(${a}, ${b})`;
+  var meanEpilogue = (v) => `(${v}) / uniforms.scalar`;
+  var sumDef = globalReduceOpDef("sum", { identityValue: 0, combine: sumCombine });
   var meanDef = globalReduceOpDef("mean", {
     identityValue: 0,
-    combine: (a, b) => `(${a} + ${b})`,
-    epilogue: (v) => `(${v}) / uniforms.scalar`
+    combine: sumCombine,
+    epilogue: meanEpilogue,
+    floatOnly: true
   });
   var maxReduceDef = globalReduceOpDef("max", {
-    identityValue: -Infinity,
-    combine: (a, b) => `max(${a}, ${b})`
+    identityValue: (dt) => dt === "f32" ? -Infinity : dt === "i32" ? INT32_MIN : 0,
+    combine: maxCombine
   });
   var minReduceDef = globalReduceOpDef("min", {
-    identityValue: Infinity,
-    combine: (a, b) => `min(${a}, ${b})`
+    identityValue: (dt) => dt === "f32" ? Infinity : dt === "i32" ? INT32_MAX : UINT32_MAX,
+    combine: minCombine
   });
   var argmaxDef = argReduceOpDef("argmax", (c, b) => `(${c} > ${b})`);
   var argminDef = argReduceOpDef("argmin", (c, b) => `(${c} < ${b})`);
-  var sumAxisDef = lastAxisReduceOpDef("sum", {
-    identityValue: 0,
-    combine: (a, b) => `(${a} + ${b})`
-  });
+  var sumAxisDef = lastAxisReduceOpDef("sum", { identityValue: 0, combine: sumCombine });
   var meanAxisDef = lastAxisReduceOpDef("mean", {
     identityValue: 0,
-    combine: (a, b) => `(${a} + ${b})`,
-    epilogue: (v) => `(${v}) / uniforms.scalar`
+    combine: sumCombine,
+    epilogue: meanEpilogue,
+    floatOnly: true
   });
   var maxAxisDef = lastAxisReduceOpDef("max", {
-    identityValue: -Infinity,
-    combine: (a, b) => `max(${a}, ${b})`
+    identityValue: (dt) => dt === "f32" ? -Infinity : dt === "i32" ? INT32_MIN : 0,
+    combine: maxCombine
   });
   var minAxisDef = lastAxisReduceOpDef("min", {
-    identityValue: Infinity,
-    combine: (a, b) => `min(${a}, ${b})`
+    identityValue: (dt) => dt === "f32" ? Infinity : dt === "i32" ? INT32_MAX : UINT32_MAX,
+    combine: minCombine
+  });
+  var sumAnyAxisDef = axisReduceOpDef("sum", { identityValue: 0, combine: sumCombine });
+  var meanAnyAxisDef = axisReduceOpDef("mean", {
+    identityValue: 0,
+    combine: sumCombine,
+    epilogue: meanEpilogue,
+    floatOnly: true
+  });
+  var maxAnyAxisDef = axisReduceOpDef("max", {
+    identityValue: (dt) => dt === "f32" ? -Infinity : dt === "i32" ? INT32_MIN : 0,
+    combine: maxCombine
+  });
+  var minAnyAxisDef = axisReduceOpDef("min", {
+    identityValue: (dt) => dt === "f32" ? Infinity : dt === "i32" ? INT32_MAX : UINT32_MAX,
+    combine: minCombine
   });
 
   // src/tensor/ops/matmul.ts
@@ -1529,6 +1744,42 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
     out[axis] = shapes.reduce((acc, s) => acc + s[axis], 0);
     return out;
   }
+  var WGSL_DTYPE = { f32: "f32", i32: "i32", u32: "u32" };
+  var expandDef = {
+    name: "expand",
+    outShape: (_shapes, attrs) => attrs.shape,
+    build: (shapes, dtypes, attrs) => {
+      const dtype = dtypes[0];
+      const inN = numElements(shapes[0]);
+      const outN = numElements(attrs.shape);
+      const dt = WGSL_DTYPE[dtype];
+      const wgsl = `
+struct U { n: u32, inN: u32, _p0: u32, _p1: u32 };
+@group(0) @binding(0) var<uniform> u: U;
+@group(0) @binding(1) var<storage, read> input: array<${dt}>;
+@group(0) @binding(2) var<storage, read_write> output: array<${dt}>;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let i = gid.x;
+  if (i >= u.n) { return; }
+  output[i] = input[i % u.inN];
+}`;
+      const step = {
+        key: `expand:${dtype}`,
+        wgsl,
+        bindings: [{ kind: "uniform" }, { kind: "read", input: 0 }, { kind: "rw", output: true }],
+        uniforms: () => {
+          const ab = new ArrayBuffer(16);
+          const dv = new DataView(ab);
+          dv.setUint32(0, outN, true);
+          dv.setUint32(4, inN, true);
+          return ab;
+        },
+        workgroups: () => [Math.ceil(outN / 64), 1, 1]
+      };
+      return { steps: [step] };
+    }
+  };
 
   // src/tensor/ops/nn.ts
   var softmaxDef = {
@@ -1572,21 +1823,19 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
       return this.apply(def, [this], {});
     };
   }
-  function reduceMethod(globalDef, axisDef, binaryDef) {
+  function reduceMethod(globalDef, axisDef, genericAxisDef, binaryDef) {
     return function(other) {
       if (other === void 0) return this.apply(globalDef, [this], {});
       if (typeof other === "number") {
-        if (other === -1 || other === this.ndim - 1 && axisDef) {
-          if (!axisDef) return this.apply(globalDef, [this], {});
+        const rank = Math.max(1, this.ndim);
+        const ax = normAxis(other, rank);
+        if (ax === rank - 1 && axisDef) {
           return this.apply(axisDef, [this], {});
         }
-        if (other === 0 && axisDef) {
-          if (this.ndim !== 2) {
-            throw new Error(`moxwebgpu: axis=0 reduce currently requires a 2D tensor, got rank ${this.ndim}`);
-          }
-          return this.transpose().apply(axisDef, [this.transpose()], {});
+        if (!genericAxisDef) {
+          throw new Error(`moxwebgpu: axis ${other} reduce is not supported for this op (use no argument for a global reduce)`);
         }
-        throw new Error(`moxwebgpu: unsupported reduce axis ${other} (use undefined, -1 or 0 on 2D)`);
+        return this.apply(genericAxisDef, [this], { axis: ax });
       }
       if (binaryDef && other instanceof Tensor) {
         return this.apply(binaryDef, [this, other], {});
@@ -1620,14 +1869,14 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
     p.sigmoid = unaryMethod(sigmoidDef);
     p.square = unaryMethod(squareDef);
     p.sign = unaryMethod(signDef);
-    p.sum = reduceMethod(sumDef, sumAxisDef);
-    p.mean = reduceMethod(meanDef, meanAxisDef);
-    p.max = reduceMethod(maxReduceDef, maxAxisDef, maxDef);
-    p.min = reduceMethod(minReduceDef, minAxisDef, minDef);
+    p.sum = reduceMethod(sumDef, sumAxisDef, sumAnyAxisDef);
+    p.mean = reduceMethod(meanDef, meanAxisDef, meanAnyAxisDef);
+    p.max = reduceMethod(maxReduceDef, maxAxisDef, maxAnyAxisDef, maxDef);
+    p.min = reduceMethod(minReduceDef, minAxisDef, minAnyAxisDef, minDef);
     p.maxReduce = p.max;
     p.minReduce = p.min;
-    p.argmax = reduceMethod(argmaxDef, null);
-    p.argmin = reduceMethod(argminDef, null);
+    p.argmax = reduceMethod(argmaxDef, null, null);
+    p.argmin = reduceMethod(argminDef, null, null);
     p.matmul = function(other) {
       return this.apply(matmulDef, [this, other], {});
     };
@@ -1651,6 +1900,9 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
       return this.apply(concatDef, [this, other], { axis });
     };
     p.softmax = unaryMethod(softmaxDef);
+    p.expand = function(shape) {
+      return this.apply(expandDef, [this], { shape });
+    };
     p.cast = function(dtype) {
       if (dtype === this.dtype) return this;
       return this.apply(castOpDef(dtype), [this], {});
@@ -1660,9 +1912,56 @@ fn main(@builtin(global_invocation_id) g: vec3u) {
     };
   }
 
+  // src/tensor/ops/backward.ts
+  function binary(d0, d1) {
+    return (inputs, _out, g) => {
+      const [a, b] = inputs;
+      return [sumTo(d0(a, b, g), a.shape), sumTo(d1(a, b, g), b.shape)];
+    };
+  }
+  function installBackward() {
+    addDef.backward = binary((_a, _b, g) => g, (_a, _b, g) => g);
+    subDef.backward = binary((_a, _b, g) => g, (_a, _b, g) => g.neg());
+    mulDef.backward = binary((_a, b, g) => g.mul(b), (a, _b, g) => g.mul(a));
+    divDef.backward = binary(
+      (_a, b, g) => g.div(b),
+      (a, b, g) => g.mul(a).div(b.mul(b)).neg()
+    );
+    addScalarDef.backward = (_i, _o, g) => [g];
+    subScalarDef.backward = (_i, _o, g) => [g];
+    rsubScalarDef.backward = (_i, _o, g) => [g.neg()];
+    mulScalarDef.backward = (_i, _o, g, attrs) => [g.mul(attrs.scalar)];
+    divScalarDef.backward = (_i, _o, g, attrs) => [g.div(attrs.scalar)];
+    rdivScalarDef.backward = (_i, x, g, attrs) => [g.mul(attrs.scalar).div(x.mul(x)).neg()];
+    negDef.backward = (_i, _o, g) => [g.neg()];
+    absDef.backward = (inputs, _o, g) => [g.mul(inputs[0].sign())];
+    expDef.backward = (_i, o, g) => [g.mul(o)];
+    logDef.backward = (inputs, _o, g) => [g.div(inputs[0])];
+    sqrtDef.backward = (_i, o, g) => [g.div(o.mul(2))];
+    squareDef.backward = (inputs, _o, g) => [g.mul(inputs[0].mul(2))];
+    reluDef.backward = (_i, o, g) => [g.mul(o.sign().add(1).div(2))];
+    sigmoidDef.backward = (_i, o, g) => [g.mul(o.mul(o.neg().add(1)))];
+    tanhDef.backward = (_i, o, g) => [g.mul(o.mul(o).neg().add(1))];
+    sumDef.backward = (inputs, _o, g) => [g.expand(inputs[0].shape)];
+    meanDef.backward = (inputs, o, g) => {
+      const n = inputs[0].size / Math.max(1, o.size);
+      return [g.expand(inputs[0].shape).div(n)];
+    };
+    matmulDef.backward = (inputs, _o, g) => {
+      const [a, b] = inputs;
+      return [g.matmul(b.transpose()), a.transpose().matmul(g)];
+    };
+    softmaxDef.backward = (inputs, o, g) => {
+      const y = o;
+      const s = sumTo(g.mul(y), y.shape);
+      return [g.sub(s).mul(y)];
+    };
+  }
+
   // src/index.ts
-  var MOXWEBGPU_VERSION = "0.1.0";
+  var MOXWEBGPU_VERSION = "1.0.1";
   installTensorOps(Tensor.prototype);
+  installBackward();
   return __toCommonJS(src_exports);
 })();
 //# sourceMappingURL=moxwebgpu.browser.js.map
