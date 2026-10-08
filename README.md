@@ -1,7 +1,9 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Mox%20Series-官方门户-8a7bff" alt="Mox Series">
-  <img src="https://img.shields.io/badge/Deploy-Cloudflare%20Pages-2088FF?logo=cloudflare&logoColor=white" alt="Cloudflare Pages">
-  <img src="https://img.shields.io/badge/Style-Liquid%20Glass-37d5d3" alt="液态玻璃">
+  <img src="https://img.shields.io/badge/version-1.0.0-8a7bff" alt="version">
+  <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
+  <img src="https://img.shields.io/badge/host-Cloudflare%20Pages-2088FF?logo=cloudflare&logoColor=white" alt="Cloudflare Pages">
+  <img src="https://img.shields.io/badge/style-Liquid%20Glass-37d5d3" alt="液态玻璃">
+  <img src="https://img.shields.io/badge/lang-中文%20%2F%20EN-ff7ac3" alt="中英双语">
 </p>
 
 <h1 align="center">mox-site</h1>
@@ -12,13 +14,27 @@
 
 ---
 
-## 这是什么
+<details>
+<summary>📑 目录 · Contents</summary>
+
+- [🔹 这是什么](#这是什么)
+- [🌟 产品系列](#产品系列)
+- [🏠 首页板块](#首页板块)
+- [🗺️ 本次大版本升级（进度表）](#本次大版本升级进度表)
+- [🎨 设计语言](#设计语言)
+- [🔍 细节](#细节)
+- [💻 本地预览](#本地预览)
+- [📜 许可证](#许可证)
+
+</details>
+
+## 🔹 这是什么
 
 [mox-site](https://codecloud-dev.github.io/mox-site/) 是 **MoX 工具系列**的统一门户：纯静态单页、零依赖、零构建，**主站部署在 Cloudflare Pages**（`mox-site.pages.dev`），GitHub Pages 仅作为镜像兜底。登录 / 云同步等动态能力由 `functions/`（Cloudflare Pages Functions）反代到 mox-id 后端，仅 Cloudflare 环境真正运行，GitHub Pages 镜像下相关接口会优雅降级。
 
 第一款产品是 **moxsh** —— Android 液态玻璃终端：Rust 自研内核，配一整套玻璃质感界面。
 
-## 产品系列
+## 🌟 产品系列
 
 | 产品 | 状态 | 一句话定位 |
 |:---:|:---:|---|
@@ -27,7 +43,7 @@
 | **moxbox** | 🚧 规划中 · 待定 | 文件管理与系统套件，同款玻璃界面；可能做，也可能不做 |
 | **moxcode** | 🚧 规划中 · 待定 | 移动端轻量 IDE：终端 + 编辑器 + 预览一体；可能做，也可能不做 |
 
-## 首页板块
+## 🏠 首页板块
 
 门户不只是「产品罗列」，它还承载了项目对外最核心的三块信息，均位于 `index.html` / `index.en.html`：
 
@@ -35,7 +51,7 @@
 - **#vision 愿景**：四条核心理念——桌面级能力装进掌心、算力下推到你的设备、独立开发者 + AI 协作、开源透明可审计。
 - **#community 社区与共建**：GitHub 组织、点 Star、提 Issue、爱发电赞助、QQ 群与邮箱入口，一处汇总。
 
-## 本次大版本升级（进度表）
+## 🗺️ 本次大版本升级（进度表）
 
 所有公开仓库统一升到 **1.0.0**，按各自路线图「多做一点、但留空间」。
 
@@ -51,26 +67,26 @@
 > 规划中·待定的 **moxbox / moxcode** 不在本次大版本范围，是否推进以实际发布为准。
 
 
-## 设计语言
+## 🎨 设计语言
 
 - **真·液态玻璃**：顶部高光反射 + 折射边 + 指针跟随光斑 + 缓慢漂移的环境光
 - 克制配色：近黑底 + 单一青→靛强调色，大量留白
 - 完整设计系统在 `style.css`，可作为独立样式表复用
 
-## 细节
+## 🔍 细节
 
 - 联系方式（QQ / 邮箱）为对外公开信息，页面默认折叠，需先通过滑块人机验证才显示，仅做轻度防爬；源码中直接以明文常量给出，不做「可逆混淆」假装隐藏
 - 下载 / 仓库链接分段 base64 拼接，页面源码不含明文账号名
 - 赞助通道：项目统一走爱发电（<https://afdian.com/a/cloudharbor>），仓库顶部 **Sponsor** 按钮已启用；官网页面内的赞助板块后续补齐。
 
-## 本地预览
+## 💻 本地预览
 
 ```bash
 python3 -m http.server 8080
 # 浏览器打开 http://localhost:8080
 ```
 
-## 许可证
+## 📜 许可证
 
 页面与内容由开发者 **Codecloud** 主导设计，AI 辅助生成并经人工审核。
 
