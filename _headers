@@ -6,3 +6,9 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# WebGPU SDK 资源：允许任意前端跨域引用（<script src> 或 ES module import），
+# 支撑「任何有自己官网/前端的项目都能直接调 GPU」的设想
+/webgpu/*
+  Access-Control-Allow-Origin: *
+  Cross-Origin-Resource-Policy: cross-origin
