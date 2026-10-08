@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>moxwebgpu · 开发者接入</title>
+<style>
+  :root {
+    --bg: #06070b;
+    --ink: #eef1f8;
+    --muted: #8b93a7;
+    --cyan: #37d5d3;
+    --indigo: #8a7bff;
+    --glass: rgba(255, 255, 255, 0.055);
+    --edge: rgba(255, 255, 255, 0.14);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.6 "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    overflow-x: hidden;
+    position: relative;
+  }
+  .aurora {
+    position: fixed; inset: -20%;
+    background:
+      radial-gradient(40% 35% at 20% 25%, rgba(55, 213, 211, 0.16), transparent 70%),
+      radial-gradient(45% 40% at 78% 70%, rgba(138, 123, 255, 0.15), transparent 70%);
+    filter: blur(60px);
+    animation: drift 26s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes drift {
+    from { transform: translate3d(-2%, -1%, 0); }
+    to   { transform: translate3d(3%, 2%, 0); }
+  }
+  .cursor-glow {
+    position: fixed; width: 460px; height: 460px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(122, 162, 255, 0.09), transparent 65%);
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 1;
+    transition: opacity .4s;
+  }
+  .wrap { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; padding: 56px 22px 96px; }
+  header { text-align: center; margin-bottom: 40px; }
+  .logo {
+    width: 80px; height: 80px; margin: 0 auto 18px; border-radius: 24px;
+    background: linear-gradient(145deg, rgba(55,213,211,.35), rgba(138,123,255,.35));
+    border: 1px solid var(--edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 18px 50px rgba(85, 120, 255, .22);
+    display: grid; place-items: center; font-size: 38px;
+  }
+  h1 {
+    font-size: 38px; letter-spacing: .5px;
+    background: linear-gradient(120deg, var(--cyan), var(--indigo));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p { color: var(--muted); margin-top: 10px; }
+  .back { color: var(--indigo); text-decoration: none; font-size: 13px; }
+  .sec { margin-top: 44px; }
+  .sec > h2 { font-size: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .sec > h2 .n {
+    width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(120deg, var(--cyan), var(--indigo)); color: #0a0c12;
+    font-size: 14px; font-weight: 800;
+  }
+  .card {
+    position: relative; border-radius: 20px; padding: 22px;
+    background: var(--glass); border: 1px solid var(--edge);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 20px 45px rgba(0,0,0,.35);
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    overflow: hidden;
+  }
+  .card::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+  }
+  pre {
+    margin-top: 12px; padding: 14px 16px; border-radius: 12px; overflow-x: auto;
+    background: rgba(0, 0, 0, .4); border: 1px solid rgba(255,255,255,.08);
+    font: 12.5px/1.6 ui-monospace, "JetBrains Mono", Consolas, monospace;
+    color: #b9e7e6; white-space: pre;
+  }
+  pre code { font: inherit; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .demo h3 { font-size: 15px; margin-bottom: 4px; }
+  .demo .desc { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  button {
+    appearance: none; cursor: pointer;
+    padding: 9px 18px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    color: #0a0c12;
+    background: linear-gradient(120deg, var(--cyan), var(--indigo));
+    border: none; box-shadow: 0 8px 22px rgba(90, 130, 255, .3);
+    transition: filter .2s, transform .1s;
+  }
+  button:hover { filter: brightness(1.12); }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .5; cursor: wait; }
+  canvas { width: 100%; height: 130px; margin-top: 14px; border-radius: 12px;
+           background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.08); display: block; }
+  .out { margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: 12.5px;
+         background: rgba(0,0,0,.32); border: 1px solid rgba(255,255,255,.07); color: #cfe; white-space: pre-wrap; min-height: 40px; }
+  .copy {
+    float: right; font-size: 12px; padding: 4px 10px; border-radius: 8px;
+  }
+  .status { text-align: center; color: var(--muted); margin-top: 34px; font-size: 13.5px; }
+  .status b { color: var(--cyan); }
+  footer { text-align: center; color: var(--muted); margin-top: 46px; font-size: 12.5px; }
+  footer a { color: var(--indigo); text-decoration: none; }
+  .tag { display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px;
+         background:rgba(138,123,255,.15); color:var(--indigo); margin-right:6px; }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<div class="cursor-glow" id="glow"></div>
+
+<div class="wrap">
+  <header>
+    <div class="logo">⚡</div>
+    <h1>moxwebgpu · 开发者接入</h1>
+    <p>把浏览器 GPU 计算 / 训练，塞进你自己的任意网站 —— 不需 npm、不需后端、不需写适配器</p>
+    <p><a class="back" href="index.html">← 返回体验页</a> · <a class="back" href="https://github.com/codecloud-dev/moxwebgpu" target="_blank" rel="noopener">GitHub</a></p>
+  </header>
+
+  <!-- ① 三行嵌入 -->
+  <section class="sec">
+    <h2><span class="n">1</span> 三行嵌入任意网站</h2>
+    <div class="card">
+      <button class="copy" data-copy="embed">复制</button>
+      <div class="desc">在页面里贴一段 <code>&lt;script&gt;</code>，你的访客的 GPU 当场就能算：</div>
+<pre><code id="embed">&lt;script src="https://mox-site.pages.dev/webgpu/moxwebgpu.browser.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  MoxWebGPU.mox.init().then(gpu =&gt; {
+    gpu.tensor([1, 2, 3]).add(1).sum().then(r =&gt; console.log('结果 =', r));
+  });
+&lt;/script&gt;</code></pre>
+    </div>
+  </section>
+
+  <!-- ② 多种引入方式 -->
+  <section class="sec">
+    <h2><span class="n">2</span> 多种引入方式</h2>
+    <div class="grid">
+      <div class="card">
+        <span class="tag">CDN · 全局</span>
+        <div class="desc">IIFE 包，挂到 <code>window.MoxWebGPU</code>，最省事：</div>
+<pre><code>&lt;script src="https://mox-site.pages.dev/webgpu/moxwebgpu.browser.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const gpu = await MoxWebGPU.mox.init();
+&lt;/script&gt;</code></pre>
+      </div>
+      <div class="card">
+        <span class="tag">npm</span>
+        <div class="desc">发布后即可（当前待发布，先走 CDN）：</div>
+<pre><code>npm i @mox/moxwebgpu
+
+import { mox } from '@mox/moxwebgpu';
+const gpu = await mox.init();</code></pre>
+      </div>
+      <div class="card">
+        <span class="tag">ESM CDN</span>
+        <div class="desc">发布后可直接 import（esm.sh / unpkg）：</div>
+<pre><code>import { mox } from 'https://esm.sh/@mox/moxwebgpu';
+const gpu = await mox.init();</code></pre>
+      </div>
+      <div class="card">
+        <span class="tag">边缘打包</span>
+        <div class="desc">无原生依赖，直接上 Cloudflare Workers：</div>
+<pre><code>esbuild worker.ts --bundle \
+  --format=esm --outfile=dist/worker.js</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 在线 demo -->
+  <section class="sec">
+    <h2><span class="n">3</span> 当场跑给你看（你的 GPU）</h2>
+    <div class="grid">
+      <div class="card demo">
+        <h3>🧠 自动微分 · 在线训练</h3>
+        <div class="desc">浏览器里训练线性回归 y≈2x+1，实时画 loss 曲线（反向传播在 GPU 上算）</div>
+        <button id="btn-train">开始训练（200 步）</button>
+        <canvas id="train-canvas"></canvas>
+        <div class="out" id="out-train">点上面按钮开训</div>
+      </div>
+      <div class="card demo">
+        <h3>行⚡ 矩阵乘法</h3>
+        <div class="desc">[64×64] · [64×64]，16×16 workgroup 分块</div>
+        <button id="btn-matmul">运行</button>
+        <div class="out" id="out-matmul">等待运行…</div>
+      </div>
+      <div class="card demo">
+        <h3>🔗 张量链式</h3>
+        <div class="desc">add → relu → mul → sum，惰性求值一次下发</div>
+        <button id="btn-chain">运行</button>
+        <div class="out" id="out-chain">等待运行…</div>
+      </div>
+    </div>
+  </section>
+
+  <p class="status" id="status">正在初始化 WebGPU…</p>
+
+  <footer>
+    moxwebgpu — MoX 工具系列成员 · 纯浏览器 WebGPU 框架，移动端 Android Chrome 同样可用
+  </footer>
+</div>
+
+<script src="moxwebgpu.browser.js"></script>
+<script>
+  const glow = document.getElementById('glow');
+  addEventListener('pointermove', (e) => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+
+  // 复制按钮
+  document.querySelectorAll('.copy').forEach(btn => {
+    btn.onclick = () => {
+      const txt = document.getElementById(btn.dataset.copy).innerText;
+      navigator.clipboard?.writeText(txt);
+      btn.textContent = '已复制';
+      setTimeout(() => btn.textContent = '复制', 1200);
+    };
+  });
+
+  const status = document.getElementById('status');
+  const fmt = (arr, n = 8) => Array.from(arr).slice(0, n).map(v => +v.toFixed(4)).join(', ');
+
+  async function run(id, fn) {
+    const btn = document.getElementById('btn-' + id);
+    const out = document.getElementById('out-' + id);
+    btn.disabled = true; out.textContent = '计算中…';
+    try {
+      const t0 = performance.now();
+      const text = await fn();
+      out.textContent = `${text}\n⏱ ${(performance.now() - t0).toFixed(2)} ms（含读回）`;
+    } catch (err) {
+      out.textContent = '❌ ' + err.message;
+    } finally { btn.disabled = false; }
+  }
+
+  function drawCurve(canvas, data) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+    const max = Math.max(...data, 1e-6);
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = i / (data.length - 1) * w;
+      const y = h - (v / max) * (h - 12) - 6;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, '#37d5d3'); grad.addColorStop(1, '#8a7bff');
+    ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  (async () => {
+    if (!navigator.gpu) {
+      status.innerHTML = '❌ 此浏览器不支持 WebGPU（需 Chrome/Edge 113+，且处于 https/localhost 安全上下文；手机用 Android Chrome 121+）';
+      ['train', 'matmul', 'chain'].forEach(id => document.getElementById('btn-' + id).disabled = true);
+      return;
+    }
+    try {
+      const gpu = await MoxWebGPU.mox.init({ powerPreference: 'low-power' });
+      const info = gpu.info();
+      status.innerHTML = `✅ WebGPU 就绪 — <b>${info.description || info.vendor || info.architecture || 'adapter'}</b> · 点上面的按钮开跑`;
+
+      document.getElementById('btn-train').onclick = () => run('train', async () => {
+        const cv = document.getElementById('train-canvas');
+        const X = gpu.tensor([[0], [1], [2], [3]]);
+        const Y = gpu.tensor([[1], [3], [5], [7]]);
+        const lr = 0.05;
+        let W = gpu.tensor([[0]]).withGrad();
+        let b = gpu.tensor([[0]]).withGrad();
+        const losses = [];
+        const out = document.getElementById('out-train');
+        for (let s = 0; s < 200; s++) {
+          const pred = X.matmul(W).add(b);
+          const loss = pred.sub(Y).mul(pred.sub(Y)).mean();
+          loss.backward();
+          losses.push(await loss.item());
+          const wv = await W.sub(W.grad.mul(lr)).toArray();
+          const bv = await b.sub(b.grad.mul(lr)).toArray();
+          W = gpu.tensor([[wv[0]]]).withGrad();
+          b = gpu.tensor([[bv[0]]]).withGrad();
+          if (s % 20 === 0) out.textContent = `step ${s}  loss=${losses[losses.length - 1].toFixed(5)}`;
+        }
+        drawCurve(cv, losses);
+        const wf = (await W.toArray())[0], bf = (await b.toArray())[0];
+        return `训练完成 200 步\n最终 W ≈ ${wf.toFixed(3)}（理论 2.0），b ≈ ${bf.toFixed(3)}（理论 1.0）\nloss 从 ${losses[0].toFixed(3)} 降到 ${losses[losses.length-1].toFixed(5)}`;
+      });
+
+      document.getElementById('btn-matmul').onclick = () => run('matmul', async () => {
+        const n = 64;
+        const a = new Float32Array(n * n).fill(0.5);
+        const b = new Float32Array(n * n).fill(2);
+        const c = await gpu.tensor(a, { shape: [n, n] }).matmul(gpu.tensor(b, { shape: [n, n] })).toArray();
+        return `C[0,0..7] = ${fmt(c)}\n预期: 0.5 × 2 × 64 = 64（全矩阵同值）`;
+      });
+
+      document.getElementById('btn-chain').onclick = () => run('chain', async () => {
+        const r = await gpu.tensor([1, 2, 3, 4, -5, 6]).add(1).relu().mul(10).sum().item();
+        return `((1,2,3,4,-5,6)+1)·relu×10 之 sum = ${r}\n预期: 2,3,4,0,7 → (2+3+4+0+7)×10 = 140`;
+      });
+    } catch (err) {
+      status.innerHTML = '❌ 初始化失败：' + err.message;
+    }
+  })();
+</script>
+</body>
+</html>
