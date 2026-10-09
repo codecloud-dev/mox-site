@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 760 380" width="760" height="380" role="img"
+     aria-label="mox-site 官机动图：agent-core / moxwebgpu / moxsh 三张卡片错峰亮起，汇入官方门户">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1832"/>
+      <stop offset="1" stop-color="#0d0b1a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a7bff"/>
+      <stop offset="1" stop-color="#37d5d3"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="760" height="380" fill="url(#bg)"/>
+  <text x="380" y="34" text-anchor="middle" fill="#ECEAFF" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="22" font-weight="700">MoX 工具系列官方门户</text>
+  <text x="380" y="57" text-anchor="middle" fill="#9B96C9" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">产品展示 · 下载入口 · 社区 · 中英文一键切换</text>
+  <g>
+    <rect x="50" y="150" width="190" height="110" rx="14" fill="#15122a" stroke="#8a7bff" stroke-width="2"/>
+    <circle cx="80" cy="186" r="14" fill="#8a7bff"/>
+    <text x="104" y="191" fill="#ECEAFF" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="15" font-weight="700">agent-core</text>
+    <text x="70" y="226" fill="#9B96C9" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">会思考的 Agent 核心</text>
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin="0s"/>
+  </g>
+  <g>
+    <rect x="275" y="150" width="190" height="110" rx="14" fill="#15122a" stroke="#37d5d3" stroke-width="2"/>
+    <circle cx="305" cy="186" r="14" fill="#37d5d3"/>
+    <text x="329" y="191" fill="#ECEAFF" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="15" font-weight="700">moxwebgpu</text>
+    <text x="295" y="226" fill="#9B96C9" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">浏览器 GPU 计算</text>
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin="0.6s"/>
+  </g>
+  <g>
+    <rect x="500" y="150" width="190" height="110" rx="14" fill="#15122a" stroke="#ff7ac3" stroke-width="2"/>
+    <circle cx="530" cy="186" r="14" fill="#ff7ac3"/>
+    <text x="554" y="191" fill="#ECEAFF" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="15" font-weight="700">moxsh</text>
+    <text x="520" y="226" fill="#9B96C9" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">手机 Linux 终端</text>
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="3s" repeatCount="indefinite" begin="1.2s"/>
+  </g>
+  <text x="380" y="320" text-anchor="middle" fill="#9B96C9" font-family="'PingFang SC','Microsoft YaHei',sans-serif" font-size="12">一个门户，串起整个 MoX 家族 —— 发现、下载、上手</text>
+  <text x="380" y="366" text-anchor="middle" fill="#6f6a96" font-family="sans-serif" font-size="11">mox-site — MoX 工具系列的官方站</text>
+</svg>
