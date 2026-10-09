@@ -13,6 +13,7 @@ The official portal for the **MoX series** (Chinese + English).
 
 - Live site: https://codecloud-dev.github.io/mox-site/
 - Bilingual: [`index.html`](index.html) (中文) · [`index.en.html`](index.en.html) (English)
+- 中文 README: [`README.md`](README.md)
 
 <p align="center"><img src="assets/demo.svg" width="760" alt="mox-site animation: agent-core / moxwebgpu / moxsh cards lighting up in sequence, feeding into the official portal"></p>
 
