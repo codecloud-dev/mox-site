@@ -12,6 +12,8 @@
 
 <p align="center"><a href="index.html">中文</a> · <a href="index.en.html">English</a></p>
 
+<p align="center"><img src="assets/demo.svg" width="760" alt="mox-site 官机动图：agent-core / moxwebgpu / moxsh 三张卡片错峰亮起，汇入官方门户"></p>
+
 <p align="center"><b>⭐ 如果你喜欢 MoX 工具系列,欢迎点个 <a href="https://github.com/codecloud-dev/mox-site">Star</a> —— 它能让更多人发现这些工具!</b></p>
 
 ---
