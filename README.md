@@ -10,7 +10,7 @@
 
 <p align="center"><b>MoX 工具系列官方站</b> —— 产品展示、下载入口与社区，都在这里。</p>
 
-<p align="center"><a href="index.html">中文</a> · <a href="index.en.html">English</a></p>
+<p align="center"><a href="index.html">中文官网</a> · <a href="index.en.html">English site</a> · <a href="README.en.md">English README</a></p>
 
 <p align="center"><img src="assets/demo.svg" width="760" alt="mox-site 官机动图：agent-core / moxwebgpu / moxsh 三张卡片错峰亮起，汇入官方门户"></p>
 
