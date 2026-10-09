@@ -14,6 +14,8 @@ The official portal for the **MoX series** (Chinese + English).
 - Live site: https://codecloud-dev.github.io/mox-site/
 - Bilingual: [`index.html`](index.html) (中文) · [`index.en.html`](index.en.html) (English)
 
+<p><b>⭐ If you like the MoX series, please give us a <a href="https://github.com/codecloud-dev/mox-site">star</a> — it helps more people discover these tools!</b></p>
+
 <details>
 <summary>📑 目录 · Contents</summary>
 
