@@ -73,6 +73,8 @@ The portal is more than a product list — it carries the three blocks that matt
 - **#vision**: four core beliefs — desktop-grade power in your palm, compute pushed to your device, indie dev + AI together, open source & auditable.
 - **#community**: GitHub org, Star, Issues, Afdian sponsorship, QQ group and email — all in one place.
 
+<p align="center"><img src="assets/afdian-qr.jpg" width="200" alt="Afdian sponsorship QR code"></p>
+
 ## 🔹 Big-version upgrade (progress)
 
 Every public repo moves to **1.0.0**, doing "a bit more, but leaving room" per its own roadmap.

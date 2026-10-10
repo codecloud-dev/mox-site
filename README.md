@@ -96,6 +96,8 @@
 - 下载 / 仓库链接分段 base64 拼接，页面源码不含明文账号名
 - 赞助通道：项目统一走爱发电（<https://afdian.com/a/cloudharbor>），仓库顶部 **Sponsor** 按钮已启用；官网「社区与共建」板块也已上线爱发电入口。
 
+<p align="center"><img src="assets/afdian-qr.jpg" width="200" alt="爱发电赞助码"></p>
+
 ## 💻 本地预览
 
 ```bash
@@ -105,7 +107,7 @@ python3 -m http.server 8080
 
 ## 📜 许可证
 
-页面与内容由开发者 **Codecloud** 主导设计，AI 辅助生成并经人工审核。
+页面与内容由开发者 **codecloud-dev** 主导设计，AI 辅助生成并经人工审核。
 
 ## 🔒 安全基线
 
