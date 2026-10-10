@@ -19,6 +19,19 @@ The official portal for the **MoX series** (Chinese + English).
 
 <p><b>⭐ If you like the MoX series, please give us a <a href="https://github.com/codecloud-dev/mox-site">star</a> — it helps more people discover these tools!</b></p>
 
+
+
+## 🐛 Welcome to roast me
+
+> This is an early-stage project — **bugs exist, and probably plenty of them.** I'm not pretending it's perfect.
+> Every pitfall you hit and every gripe you have is a chance to help make it better.
+
+- 💥 Crashed / black screen / won't run? → [File a bug report](https://github.com/codecloud-dev/mox-site/issues)
+- 💡 Want a feature? → [Open a feature request](https://github.com/codecloud-dev/mox-site/issues)
+- 🗯️ Just want to rant or nitpick? → Issues are welcome too, label it whatever 😄
+
+I read every issue and fix what I can, fast. Let's grow this from "runs" to "delightful" 💪
+
 <details>
 <summary>📑 目录 · Contents</summary>
 
