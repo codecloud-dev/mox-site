@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-10-10T05:26:06Z",
+  "repos": {
+    "moxsh-terminal": {
+      "title": "moxsh 终端",
+      "subtitle": "安卓液态玻璃 Linux 终端",
+      "github": "https://github.com/codecloud-dev/moxsh-terminal",
+      "desc": "随代码持续构建发布的正式签名 APK。下方每个版本都提供多个国内加速镜像，任选其一即可。"
+    }
+  },
+  "primary": "moxsh-terminal",
+  "releases": [
+    {
+      "tag": "v0.6.2",
+      "name": "v0.6.2 · 云同步与玻璃增强",
+      "date": "2026-10-06",
+      "notes": "moxsh v0.6.2：PTY 内核强化 + 液态玻璃增强 + 命令云同步 MVP + 登录入口接线。详见 CHANGELOG.md",
+      "assets": [
+        {
+          "name": "app-release.apk",
+          "size": 127937094,
+          "sizeText": "122.0 MB",
+          "url": "https://github.com/codecloud-dev/moxsh-terminal/releases/download/v0.6.2/app-release.apk"
+        }
+      ]
+    },
+    {
+      "tag": "v0.6.0",
+      "name": "v0.6.0 · 云同步与玻璃增强",
+      "date": "2026-09-28",
+      "notes": "moxsh v0.6.0：PTY 内核强化 + 液态玻璃增强 + 命令云同步 MVP + 登录入口接线。详见 CHANGELOG.md",
+      "assets": [
+        {
+          "name": "app-release.apk",
+          "size": 127881850,
+          "sizeText": "122.0 MB",
+          "url": "https://github.com/codecloud-dev/moxsh-terminal/releases/download/v0.6.0/app-release.apk"
+        }
+      ]
+    },
+    {
+      "tag": "v0.5.1",
+      "name": "moxsh v0.5.1（修复合集）",
+      "date": "2026-09-28",
+      "notes": "基于 main@690d8ef。包含 Kotlin 侧安全修复（TaskerReceiver 鉴权 / IPC 超时防阻塞 / 路径逃逸白名单 / AgentTools 审查绕过封堵 / 悬浮窗权限复查）、ffi_guard 覆盖全部 21 个 C-ABI 入口、clippy 清零（-D warnings）、Android aarch64 交叉编译与 103 测试全绿。APK 由 release-apk workflow 自动上传到本 Release。",
+      "assets": [
+        {
+          "name": "app-release.apk",
+          "size": 42981910,
+          "sizeText": "41.0 MB",
+          "url": "https://github.com/codecloud-dev/moxsh-terminal/releases/download/v0.5.1/app-release.apk"
+        }
+      ]
+    },
+    {
+      "tag": "v0.5.0",
+      "name": "moxsh v0.5.0",
+      "date": "2026-09-27",
+      "notes": "## moxsh v0.5.0 — 首个全链路 CI 构建版\n\n本版本是 moxsh 内核与插件体系全面整合后的首个正式签名 APK，由 GitHub Actions 全自动构建。\n\n### 亮点\n\n- **Rust 自研终端内核**：PTY 会话、VT 解析、回滚缓冲、渲染调度全部 Rust 实现，热点走 NEON 汇编\n- **液态玻璃 UI**：整应用 RenderEffect 实时模糊 + 高光描边玻璃组件体系\n- **插件体系**：悬浮玻璃终端、桌面部件、Boot 事件、样式、AI 技能五个内置插件装配点落地\n- **加固本地 IPC**：挑战-响应 + HMAC-SHA256 鉴权（自研加密原语，NIST 向量全量回归）\n- **proot 发行版**：Ubuntu / Debian / Kali / Alpine 一键安装（SHA-256 校验 + 符号链接逃逸防御）\n\n### 内核质量门（本版起生效）\n\n- `cargo test`：103 项单元/回归测试全绿（含 SHA-256 NIST 向量、HMAC RFC 4231、mmap 扩容历史保留、符号链接逃逸防御）\n- `cargo clippy` 静态检查、`cargo audit` 依赖漏洞扫描、aarch64-linux-android 交叉编译检查\n- FFI panic 屏障：内核异常不再击穿 C 边界，折叠为错误码返回\n- 依赖版本精确锁定（libc / tar / flate2 / cc）+ rust-toolchain 钉死 1.86.0\n\n### 安装说明\n\n- 下载 `app-release.apk` 安装（Android 9.0 / API 28+）\n- SHA-256：`5f5e853e35e48b8783b31d1da2aca5320206c6e220454293723253f3",
+      "assets": [
+        {
+          "name": "app-release.apk",
+          "size": 40923060,
+          "sizeText": "39.0 MB",
+          "url": "https://github.com/codecloud-dev/moxsh-terminal/releases/download/v0.5.0/app-release.apk"
+        }
+      ]
+    }
+  ],
+  "latest": "v0.6.2"
+}
