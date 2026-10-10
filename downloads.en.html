@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Download moxsh Terminal · MoX</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="index.css" />
+  <style>
+    body{padding-bottom:60px}
+    .dl-hero{max-width:980px;margin:0 auto;padding:120px 20px 10px;text-align:center}
+    .dl-hero h1{font-size:clamp(30px,6vw,46px);margin:0 0 10px;background:linear-gradient(120deg,#5eead4,#818cf8);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .dl-hero p{color:var(--dim);max-width:680px;margin:0 auto;line-height:1.7;font-size:15px}
+    .dl-wrap{max-width:860px;margin:30px auto;padding:0 18px}
+    .rel{margin:18px 0;padding:20px 22px;border-radius:20px}
+    .rel.is-latest{border:1px solid rgba(94,234,212,.4);box-shadow:0 0 0 1px rgba(94,234,212,.15),0 18px 50px -24px rgba(94,234,212,.4)}
+    .rel-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+    .rel-tag{font-weight:800;font-size:20px}
+    .rel-date{color:var(--dim);font-size:13px}
+    .rel-name{font-size:15px;margin:6px 0 4px;color:var(--text)}
+    .rel-notes{color:var(--dim);font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:12px;max-height:120px;overflow:auto}
+    .asset{padding:12px 14px;margin:10px 0;border-radius:14px;background:var(--glass)}
+    .asset-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+    .asset-name{font-weight:600;font-size:14px}
+    .tag-latest{font-size:11px;color:#06121a;background:var(--accent-a);padding:2px 8px;border-radius:999px;margin-left:6px;font-weight:700}
+    .asset-size{color:var(--dim);font-size:13px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{display:inline-flex;align-items:center;padding:9px 14px;border-radius:11px;border:1px solid var(--stroke);color:var(--text);font-size:13px;font-weight:600;text-decoration:none;background:var(--glass);transition:transform .15s,background .15s}
+    .chip:hover{transform:translateY(-2px);background:var(--glass-2)}
+    .chip.primary{background:var(--accent);border-color:transparent;color:#06121a}
+    .chip.ghost{background:transparent;color:var(--dim)}
+    .loading,.empty{color:var(--dim);text-align:center;padding:40px}
+    .dl-tip{max-width:860px;margin:8px auto 0;padding:0 18px;color:var(--dim);font-size:13px;text-align:center}
+    .back{display:inline-block;margin:6px 18px 0;color:var(--accent-b);text-decoration:none;font-size:14px}
+  </style>
+</head>
+<body>
+<nav class="glass">
+  <div class="brand"><span class="mark"></span><span>MoX</span></div>
+  <div class="links">
+    <a href="index.html">Home</a>
+    <a href="experience.html">Try online</a>
+    <a href="downloads.html" style="color:var(--text)">Download</a>
+    <a href="https://github.com/codecloud-dev/moxsh-terminal" target="_blank" rel="noopener">GitHub</a>
+    <a class="lang" href="downloads.html">中</a>
+  </div>
+</nav>
+
+<div class="dl-hero">
+  <h1 id="dlTitle">Download moxsh Terminal</h1>
+  <p id="dlSub">Liquid-glass Linux terminal for Android · all versions</p>
+  <p style="margin-top:14px">Every version ships with several China-friendly mirrors — pick any one. Mirrors are community services; if one fails, try another.</p>
+</div>
+
+<div class="dl-wrap">
+  <div id="releaseList"></div>
+</div>
+
+<p class="dl-tip">APKs stay on GitHub; the site only accelerates delivery. No sign-up needed. If you like it, <a href="index.html#support" style="color:var(--accent-b)">star it on the site ★</a>.</p>
+<a class="back" href="index.html">← Back home</a>
+
+<script src="downloads.js"></script>
+</body>
+</html>
