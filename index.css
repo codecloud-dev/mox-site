@@ -206,6 +206,8 @@
   .modal p.dim{margin:0 0 16px;color:var(--dim);font-size:13px;line-height:1.5}
   .modal a.gh{display:block;text-align:center;padding:12px;border-radius:12px;background:linear-gradient(120deg,#5eead4,#818cf8);
     color:#06070d;font-weight:700;text-decoration:none;margin-bottom:6px}
+  .modal a.gh.gitee{background:linear-gradient(120deg,#f87171,#c71d23);color:#fff}
+  .modal a.gh.busy{opacity:.7;pointer-events:none}
   .modal .or{text-align:center;color:var(--faint);font-size:12px;margin:8px 0 12px}
   .modal input{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--stroke-hi);
     background:rgba(255,255,255,.05);color:var(--text);margin-bottom:10px;font:inherit;box-sizing:border-box}

@@ -263,6 +263,16 @@ function makeSlider(root,onPass){
     if(ib)ib.style.display='none';
     var gh=document.getElementById('ghLoginBtn');
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    /* Gitee quick sign-in (parallel entry, faster in China): same shape as GitHub;
+       silently hidden when the backend has no Gitee credentials configured. */
+    var ge=document.getElementById('giteeLoginBtn');
+    if(ge){
+      var geHref=LOGIN_API+'/auth/gitee/start?redirect='+encodeURIComponent(location.href);
+      ge.href=geHref;
+      fetch(geHref,{redirect:'manual'}).then(function(r){
+        if(r.status===503)ge.style.display='none'; /* gitee_not_configured */
+      }).catch(function(){/* keep the button on network hiccups */});
+    }
     probeBackend();
   }
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
@@ -278,6 +288,12 @@ function makeSlider(root,onPass){
   if(ghBtn){
     ghBtn.addEventListener('click',function(){ghBtn.classList.add('busy');ghBtn.textContent='Opening GitHub…';});
     window.addEventListener('pageshow',function(ev){if(ev.persisted){ghBtn.classList.remove('busy');ghBtn.textContent='Sign in with GitHub';}});
+  }
+  /* Gitee button instant feedback (same pattern, own copy) */
+  var geBtn=document.getElementById('giteeLoginBtn');
+  if(geBtn){
+    geBtn.addEventListener('click',function(){geBtn.classList.add('busy');geBtn.textContent='Opening Gitee…';});
+    window.addEventListener('pageshow',function(ev){if(ev.persisted){geBtn.classList.remove('busy');geBtn.textContent='Sign in with Gitee (faster in China)';}});
   }
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;

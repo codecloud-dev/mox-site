@@ -273,6 +273,15 @@ function makeSlider(root,onPass){
     if(ib)ib.style.display='none';
     var gh=document.getElementById('ghLoginBtn');
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
+    /* Gitee 快捷登录（平行入口，国内更快）：href 与 GitHub 同构；后端未配置时静默隐藏按钮 */
+    var ge=document.getElementById('giteeLoginBtn');
+    if(ge){
+      var geHref=LOGIN_API+'/auth/gitee/start?redirect='+encodeURIComponent(location.href);
+      ge.href=geHref;
+      fetch(geHref,{redirect:'manual'}).then(function(r){
+        if(r.status===503)ge.style.display='none'; /* gitee_not_configured：不碍眼 */
+      }).catch(function(){/* 网络抖动时保留按钮，点击时再跳转 */});
+    }
     probeBackend();
   }
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
@@ -288,6 +297,12 @@ function makeSlider(root,onPass){
   if(ghBtn){
     ghBtn.addEventListener('click',function(){ghBtn.classList.add('busy');ghBtn.textContent='正在打开 GitHub…';});
     window.addEventListener('pageshow',function(ev){if(ev.persisted){ghBtn.classList.remove('busy');ghBtn.textContent='使用 GitHub 登录';}});
+  }
+  /* Gitee 按钮即时反馈（同上，文案独立） */
+  var geBtn=document.getElementById('giteeLoginBtn');
+  if(geBtn){
+    geBtn.addEventListener('click',function(){geBtn.classList.add('busy');geBtn.textContent='正在打开 Gitee…';});
+    window.addEventListener('pageshow',function(ev){if(ev.persisted){geBtn.classList.remove('busy');geBtn.textContent='使用 Gitee 登录（国内更快）';}});
   }
   document.getElementById('tokLoginBtn').addEventListener('click',function(){
     var t=document.getElementById('tokInput').value.trim();if(!t)return;
