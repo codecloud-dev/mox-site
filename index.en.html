@@ -12,7 +12,7 @@
 <link rel="dns-prefetch" href="https://github.com">
 <link rel="preconnect" href="https://avatars.githubusercontent.com" crossorigin>
 <link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-site.pages.dev; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-site.pages.dev; frame-src https://challenges.cloudflare.com; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="stylesheet" href="index.en.css">
 </head>
@@ -364,7 +364,7 @@
     <div class="dl glass fadeup">
       <h3>Release APK</h3>
       <p>The latest auto-built, signed APK. Fastest path when GitHub is reachable.</p>
-      <a class="btn primary" id="dlLatest" href="#" target="_blank" rel="noopener">Go to downloads →</a>
+      <a class="btn primary" id="dlLatest" href="downloads.en.html">Go to downloads →</a>
     </div>
     <div class="dl glass fadeup">
       <h3>Contact us</h3>
@@ -467,6 +467,7 @@
     <div id="loggedInBox" style="display:none">
       <div class="lb"><span class="lbi">✅</span><div>Signed in as <b id="meName"></b>. Credentials stay in this browser; sign out anytime.</div></div>
       <div class="row">
+        <a id="meFanBtn" class="gh" style="display:none" href="fan.html" rel="opener">Fan zone</a>
         <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">Open admin console</a>
         <button id="meLogoutBtn" class="primary">Sign out</button>
         <button id="meCloseBtn">Close</button>

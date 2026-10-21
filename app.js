@@ -21,8 +21,7 @@ function f(t){var ta=document.createElement('textarea');ta.value=t;ta.style.posi
 var tt=null;function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show');},2200);}
 
-/* 链接：下载 / GitHub / Star */
-document.getElementById('dlLatest').href=GH_BASE+'/releases/latest';
+/* 链接：下载 / GitHub / Star（dlLatest 的 href 由 HTML 直接指向 downloads.html，不在此覆盖） */
 document.getElementById('ghLink').href=GH_BASE;
 document.getElementById('starBtn').href=GH_BASE;
 document.getElementById('ghStar').href=GH_BASE;
@@ -219,6 +218,15 @@ function makeSlider(root,onPass){
     var a=document.createElement('a');a.href=adminHref;a.textContent='管理后台';
     slot.insertBefore(a,slot.firstChild);
   }
+  /* 粉丝入口：领过粉丝福利（/fan/status.claimed）才在账户区显示——隐藏粉丝页
+     的唯一官方入口（未领取/灰度外都不显示；页面本身 noindex + 导航无链接）。 */
+  function renderFanEntry(){
+    var t=getTok(); if(!t) return;
+    fetch(LOGIN_API+'/fan/status',{headers:{'Authorization':'Bearer '+t}})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){ var b=document.getElementById('meFanBtn'); if(b&&d&&d.claimed) b.style.display=''; })
+      .catch(function(){});
+  }
   function renderLogin(){
     currentUser=null;adminHref='';
     if(cta)cta.textContent='登录 MoX 账号';
@@ -288,6 +296,7 @@ function makeSlider(root,onPass){
         /* 无刷新登录：直接切登录态 + toast；管理入口异步补齐（/me 才下发秘径） */
         setTok(x.d.sid || t);mask.classList.remove('show');
         renderUser(x.d.user);
+        renderFanEntry();
         showToast('登录成功 · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'欢迎'));
         fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+(x.d.sid || t)}})
           .then(function(r){return r.ok?r.json():null;})
@@ -312,6 +321,7 @@ function makeSlider(root,onPass){
         if(x.authed&&x.d&&x.d.user){
           renderUser(x.d.user);
           if(x.d.admin_path)renderAdmin(x.d.admin_path);
+          renderFanEntry();
         }else if(x.down){
           renderLogin();setStatus('off','登录服务暂时不可达');
         }else{

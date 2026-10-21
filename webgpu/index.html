@@ -578,7 +578,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   async stepGpu(P) {
     const kernArr = KERNELS[this.kind].build(P.radius);
     this.ensureGpu(P, kernArr);
-    new Uint32Array(16).set([W, H, P.radius, 0]);
     gpu.queue.writeBuffer(this.gpuUbo, 0, new Uint32Array([W, H, P.radius, 0]).buffer);
     this.kernel.dispatch([this.gpuUbo, this.gpuSrc, this.gpuKern, this.gpuOut], [Math.ceil(PIXELS / 64), 1, 1]);
     const out = await gpu.readback(this.gpuOut);

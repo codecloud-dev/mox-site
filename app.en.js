@@ -21,8 +21,7 @@ function f(t){var ta=document.createElement('textarea');ta.value=t;ta.style.posi
 var tt=null;function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show');},2200);}
 
-/* 链接：下载 / GitHub / Star */
-document.getElementById('dlLatest').href=GH_BASE+'/releases/latest';
+/* Links: download / GitHub / Star (dlLatest's href points at downloads.en.html directly in HTML — not overridden here) */
 document.getElementById('ghLink').href=GH_BASE;
 document.getElementById('starBtn').href=GH_BASE;
 document.getElementById('ghStar').href=GH_BASE;
@@ -209,6 +208,15 @@ function makeSlider(root,onPass){
     var a=document.createElement('a');a.href=adminHref;a.textContent='Console';
     slot.insertBefore(a,slot.firstChild);
   }
+  /* Fan entry: shown in the account area only after fan benefits are claimed
+     (/fan/status.claimed) — the sole official entry to the hidden fan page. */
+  function renderFanEntry(){
+    var t=getTok(); if(!t) return;
+    fetch(LOGIN_API+'/fan/status',{headers:{'Authorization':'Bearer '+t}})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){ var b=document.getElementById('meFanBtn'); if(b&&d&&d.claimed) b.style.display=''; })
+      .catch(function(){});
+  }
   function renderLogin(){
     currentUser=null;adminHref='';
     if(cta)cta.textContent='Sign in to MoX';
@@ -278,6 +286,7 @@ function makeSlider(root,onPass){
         /* Reload-free sign-in: switch state in place + toast; console entry filled in async (/me only) */
         setTok(t);mask.classList.remove('show');
         renderUser(x.d.user);
+        renderFanEntry();
         showToast('Signed in · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'welcome'));
         fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
           .then(function(r){return r.ok?r.json():null;})
@@ -302,6 +311,7 @@ function makeSlider(root,onPass){
         if(x.authed&&x.d&&x.d.user){
           renderUser(x.d.user);
           if(x.d.admin_path)renderAdmin(x.d.admin_path);
+          renderFanEntry();
         }else if(x.down){
           renderLogin();setStatus('off','Sign-in service temporarily unreachable');
         }else{

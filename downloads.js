@@ -91,7 +91,16 @@
   function assetRow(asset, isLatest) {
     var row = el("div", "asset glass");
     var head = el("div", "asset-head");
-    head.appendChild(el("div", "asset-name", asset.name + (isLatest ? ' <span class="tag-latest">' + T.latest + "</span>" : "")));
+    // 名称走 textContent：downloads.json 源自 GitHub Release 元数据，不当 HTML 拼接
+    var nameBox = el("div", "asset-name");
+    nameBox.textContent = asset.name;
+    if (isLatest) {
+      var tag = document.createElement("span");
+      tag.className = "tag-latest";
+      tag.textContent = T.latest;
+      nameBox.appendChild(tag);
+    }
+    head.appendChild(nameBox);
     head.appendChild(el("div", "asset-size", asset.sizeText));
     row.appendChild(head);
 
@@ -117,11 +126,22 @@
   function releaseCard(r, isLatest) {
     var card = el("div", "rel glass" + (isLatest ? " is-latest" : ""));
     var head = el("div", "rel-head");
-    head.appendChild(el("div", "rel-tag", r.tag));
-    head.appendChild(el("div", "rel-date", T.date + " " + r.date));
+    // tag / date 同属 GitHub 远端数据，一律 textContent，不走 innerHTML
+    var relTag = el("div", "rel-tag");
+    relTag.textContent = r.tag;
+    var relDate = el("div", "rel-date");
+    relDate.textContent = T.date + " " + r.date;
+    head.appendChild(relTag);
+    head.appendChild(relDate);
     card.appendChild(head);
-    card.appendChild(el("div", "rel-name", r.name));
-    if (r.notes) card.appendChild(el("div", "rel-notes", r.notes));
+    var relName = el("div", "rel-name");
+    relName.textContent = r.name;
+    card.appendChild(relName);
+    if (r.notes) {
+      var relNotes = el("div", "rel-notes");
+      relNotes.textContent = r.notes;
+      card.appendChild(relNotes);
+    }
     r.assets.forEach(function (a) { card.appendChild(assetRow(a, isLatest)); });
     return card;
   }

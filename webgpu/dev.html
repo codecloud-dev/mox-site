@@ -270,7 +270,9 @@ const gpu = await mox.init();</code></pre>
     try {
       const gpu = await MoxWebGPU.mox.init({ powerPreference: 'low-power' });
       const info = gpu.info();
-      status.innerHTML = `✅ WebGPU 就绪 — <b>${info.description || info.vendor || info.architecture || 'adapter'}</b> · 点上面的按钮开跑`;
+      // 适配器描述等外部字符串转义后再进 innerHTML，与 webgpu/index.html 的 esc 惯例一致
+      const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      status.innerHTML = `✅ WebGPU 就绪 — <b>${esc(info.description || info.vendor || info.architecture || 'adapter')}</b> · 点上面的按钮开跑`;
 
       document.getElementById('btn-train').onclick = () => run('train', async () => {
         const cv = document.getElementById('train-canvas');

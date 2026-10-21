@@ -573,8 +573,10 @@ function renderSess(){
     const it=document.createElement('div');
     it.className='sess-item'+(s.active?' on':'')+(s.exit!==0?' dead':'');
     it.innerHTML=`<span class="sess-dot" style="background:${e.c}"></span>`+
-      `<div class="sess-meta"><b>${s.name}</b><span>${e.t} · ${s.cwd}${s.exit!==0?' · 退出码 '+s.exit:''}</span></div>`+
+      `<div class="sess-meta"><b></b><span>${e.t} · ${s.cwd}${s.exit!==0?' · 退出码 '+s.exit:''}</span></div>`+
       (s.exit!==0?'<span class="sess-kill">结束</span>':'<span class="sess-tag">'+(s.active?'当前':'切换')+'</span>');
+    // 会话名来自 prompt() 用户输入，必须走 textContent，防 innerHTML 注入
+    it.querySelector('.sess-meta b').textContent=s.name;
     it.addEventListener('click',ev=>{ if(ev.target.classList.contains('sess-kill')){ killSess(s.id); return; } switchSess(s.id); });
     let lpT=null;
     it.addEventListener('pointerdown',()=>{ lpT=setTimeout(()=>{ const n=prompt('重命名会话', s.name); if(n){ s.name=n.trim()||s.name; renderSess(); } },540); });

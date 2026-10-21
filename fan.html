@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moxsh · 粉丝专区</title>
+  <meta name="description" content="moxsh 官方粉丝专区 —— 登录领取粉丝专属福利" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%9E%3C/text%3E%3C/svg%3E" />
+  <!-- CSP：脚本仅本页；连接仅后端（pages.dev 同域反代 / Worker 直连）；头像仅 GitHub -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self' https://mox-site.pages.dev https://mox-id.3042980037.workers.dev; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests" />
+  <link rel="stylesheet" href="fan-assets/styles.css" />
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="logo">moxsh 粉丝专区</div>
+      <div class="tagline">液态玻璃终端 · 无 root Linux 容器 —— 感谢每一份支持</div>
+    </header>
+
+    <div id="config-warn" class="warn-banner" hidden>
+      尚未配置后端地址：请编辑 <b>config.js</b> 的 <b>apiBase</b>（指向 mox-id Worker 或官网同域反代）。
+    </div>
+
+    <div id="notices"></div>
+
+    <!-- 登录 / 我的信息 -->
+    <div id="auth-area"></div>
+
+    <!-- 粉丝领取区（登录后显示） -->
+    <div id="fan-area" hidden>
+      <div class="section-title">粉丝福利</div>
+      <div id="claim-area"></div>
+
+      <div class="section-title">会员档位</div>
+      <div id="tiers" class="glass" style="padding:14px"></div>
+
+      <div class="section-title">感谢赞助</div>
+      <div class="glass card">
+        <div id="sponsor-total">累计赞助 ¥0.00</div>
+        <div id="sponsor-wall"></div>
+      </div>
+    </div>
+
+    <footer>
+      moxsh · Powered by mox-id（Cloudflare）· 登录即表示同意将 GitHub 公开信息用于权益绑定
+    </footer>
+  </div>
+
+  <script src="fan-assets/config.js"></script>
+  <script src="fan-assets/app.js"></script>
+</body>
+</html>
