@@ -194,7 +194,7 @@
     const c = el("div", "glass card");
     c.innerHTML = `
       <h3>① 领取粉丝专属</h3>
-      <p class="muted">点击「确认领取」即由官方服务端签发激活码（绑定当前 GitHub 账号，可随时在后台吊销）。</p>
+      <p class="muted">点击「确认领取」即由官方服务端签发激活码（绑定当前 GitHub 账号，可随时在服务端吊销）。</p>
       <button id="btn-claim" class="btn primary">确认领取</button>
       <div id="claim-msg" class="msg"></div>`;
     box.appendChild(c);

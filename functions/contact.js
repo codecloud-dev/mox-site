@@ -6,15 +6,8 @@
 // 依赖 Cloudflare 环境变量（控制台 / wrangler.toml 配置）：
 //   TURNSTILE_SECRET    Turnstile 服务端密钥（必填，否则 500）
 //   TURNSTILE_SITEKEY   前端挂件站点密钥（也可直接写在 index.html 的 data-sitekey）
-//   CONTACT_QQ / CONTACT_MAIL  可选，缺省用下方常量
-import { corsHeaders } from './api-proxy.js';
-
-// mox-id 后端（与 api-proxy.js 的 UPSTREAM 一致）
-const UPSTREAM = 'https://mox-id-email.moxsh.app';
-
-// 服务端常量：仅运行在 Worker 内，绝不进浏览器 JS，爬虫无法从静态资源获取。
-const FALLBACK_QQ = '3042980037';
-const FALLBACK_MAIL = 'z6666666662026@163.com';
+//   CONTACT_QQ / CONTACT_MAIL  必填（Pages 项目 secret），缺失时 fail-closed 返回 500
+import { corsHeaders, UPSTREAM } from './api-proxy.js';
 
 function json(status, data, extra) {
   return new Response(JSON.stringify(data), {
@@ -84,11 +77,11 @@ export async function onRequestPost(ctx) {
   }
   if (!authed) return json(403, { error: 'login_required' });
 
-  // 3) 通过：下发联系方式
-  return json(200, {
-    qq: env.CONTACT_QQ || FALLBACK_QQ,
-    mail: env.CONTACT_MAIL || FALLBACK_MAIL,
-  });
+  // 3) 通过：下发联系方式（fail-closed：secret 未配置则拒发，绝不回退硬编码值）
+  if (!env.CONTACT_QQ || !env.CONTACT_MAIL) {
+    return json(500, { error: 'contact_not_configured' });
+  }
+  return json(200, { qq: env.CONTACT_QQ, mail: env.CONTACT_MAIL });
 }
 
 export const onRequestOptions = (c) =>

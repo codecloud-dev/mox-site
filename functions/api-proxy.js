@@ -22,7 +22,9 @@
 // 临时回退到 Worker 标准地址 workers.dev（2026-10-06），待 Cloudflare 侧恢复
 // mox-id-email.moxsh.app 自定义域后【必须改回中性域】，否则会暴露站长 QQ 号。
 // OAuth 回调用官网域名（X-Forwarded-Host），与此终点无关，故仅需改这里即可恢复登录。
-const UPSTREAM = 'https://mox-id.3042980037.workers.dev';
+// ⚠️ 临时态（踩坑记录 §5.2）：中性域 mox-id-email.moxsh.app 因 moxsh.app DNS 故障不可达，
+// 暂回退 Worker 标准域名保登录；DNS 恢复后必须改回 'https://mox-id-email.moxsh.app'（见任务 #353）。
+export const UPSTREAM = 'https://mox-id.3042980037.workers.dev';
 
 // 允许的跨域来源白名单：仅官网同域、GitHub Pages 镜像与本地开发可调用本反代。
 // 此前用 '*' 且同时透传会话 Cookie，构成 CSRF 向量；现收紧为显式白名单，
@@ -69,7 +71,7 @@ export async function proxy(context) {
     req.headers.set('X-Forwarded-Host', url.host);
     const res = await fetch(req, { redirect: 'manual' });
     // ⚠️ new Response(body, res) 会吞掉 Set-Cookie（Headers guard 过滤 forbidden header），
-    // 导致 OAuth 回调种的 mox_sid 到不了浏览器 → 官网登录后进后台还要再登一次（SSO 断链根因）。
+    // 导致 OAuth 回调种的 mox_sid 到不了浏览器 → 官网登录后进专属入口还要再登一次（SSO 断链根因）。
     // 必须逐条显式补种。
     const setCookies = typeof res.headers.getSetCookie === 'function' ? res.headers.getSetCookie() : [];
     const out = new Response(res.body, res);

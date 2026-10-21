@@ -10,7 +10,7 @@ import { proxy, corsHeaders } from './api-proxy.js';
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
-  // 后台秘径下的 /api/* 一定是 worker 接口，绝无静态资源：直接转发，
+  // 专属路径下的 /api/* 一定是 worker 接口，绝无静态资源：直接转发，
   // 跳过 ASSETS 预检，避免静态层误拦截导致「已登录却判未授权 → 再登录」。
   if (url.pathname.includes('/api/')) {
     const wres = await proxy(context);
@@ -35,7 +35,7 @@ export async function onRequestGet(context) {
     /* ASSETS 异常时继续走 worker 转发，至少隐藏运维入口仍可用 */
   }
   const wres = await proxy(context);
-  // worker 也 404（非秘径/未知 API）：回退到站内 404 页，保持体验一致
+  // worker 也 404（未知 API）：回退到站内 404 页，保持体验一致
   if (wres.status === 404 && assetsRes) {
     try {
       const p404 = await context.env.ASSETS.fetch(new URL('/404.html', context.request.url).toString());

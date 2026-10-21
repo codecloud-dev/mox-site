@@ -29,6 +29,23 @@ jobs:
         with:
           node-version: '20'
 
+      - name: 注入联系方式 Pages secret
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CONTACT_QQ: ${{ secrets.CONTACT_QQ }}
+          CONTACT_MAIL: ${{ secrets.CONTACT_MAIL }}
+        run: |
+          npm i -g wrangler@3 2>&1 | tail -1
+          for kv in "CONTACT_QQ:$CONTACT_QQ" "CONTACT_MAIL:$CONTACT_MAIL"; do
+            name="${kv%%:*}"; val="${kv#*:}"
+            if [ -n "$val" ]; then
+              printf '%s' "$val" | npx wrangler pages secret put "$name" --project-name=mox-site 2>&1 | tail -1
+              echo "OK: $name 已注入 Pages 项目"
+            else
+              echo "FAIL: $name 未设置——源码已 fail-closed 无硬编码，/contact 将拒发"; exit 1
+            fi
+          done
+
       - name: Deploy to Cloudflare Pages
         id: deploy
         env:
@@ -108,6 +125,24 @@ jobs:
           done
           echo "$ST" | grep -iE "^HTTP|^location" | sed 's/\(client_id=[A-Za-z0-9]\{6\}\)[A-Za-z0-9]*/\1****/' || true
           [ -n "$LOC" ] && echo "OK: 官网同域 OAuth 反代 302 正常" || { echo "FAIL: /auth/github/start 反代未返回 302"; S=1; }
+          # SSO 断链回归：/auth/logout 必带 Set-Cookie（反代若吞 cookie，官网登录态进后台就断）
+          SC=""
+          for i in 1 2 3 4 5 6 8 10 12; do
+            SC=$(curl -sS -m 20 -X POST -D - -o /dev/null "$BASE/auth/logout" || true)
+            echo "$SC" | grep -qi '^set-cookie:.*mox_sid' && break
+            echo "等待 Set-Cookie 透传生效… 第 $i 次"; sleep 10
+          done
+          echo "$SC" | grep -iE '^HTTP|^set-cookie' | sed 's/mox_sid=[^;]*/mox_sid=****/' || true
+          echo "$SC" | grep -qi '^set-cookie:.*mox_sid' && echo "OK: 反代透传 Set-Cookie（SSO 不断链）" || { echo "FAIL: Set-Cookie 被吞（SSO 断链回归）"; S=1; }
+          # 泄露扫描：公开产物不得出现后台/秘径/admin console/QQ 号
+          LEAK=0
+          for u in "/" "/index.en.html" "/404.html" "/app.js" "/app.en.js"; do
+            body=$(curl -sS -m 20 "$BASE$u" 2>/dev/null || true)
+            if echo "$body" | grep -qiE '管理后台|admin console|hidden admin|秘径|3042980037'; then
+              echo "FAIL: $u 含泄露字样"; LEAK=1
+            fi
+          done
+          [ "$LEAK" = 0 ] && echo "OK: 公开产物无后台/QQ 泄露" || S=1
           [ "$S" = 0 ] && echo "✅ 官网安全验证全绿" || {
             gh issue create --title "官网安全验证失败 $(date -u +%FT%TZ)" \
               --body "安全头/CSP/资源完整性检查未通过，见 Actions 日志。" 2>&1 | head -2 || true; exit 1; }
