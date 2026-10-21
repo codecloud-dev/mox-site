@@ -1,5 +1,8 @@
 > **🌐 Canonical repository is on GitHub** — [`codecloud-dev/mox-site`](https://github.com/codecloud-dev/mox-site) is the single source of truth: please file all issues and pull requests there. The [Gitee mirror](https://gitee.com/thousand-code-crafts/mox-site) is a read-only copy synced hourly for faster access in mainland China.
 
+<p align="center"><img src="assets/logo.svg" width="128" alt="MoX"/></p>
+
+
 # mox-site
 
 <p align="center">
