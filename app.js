@@ -174,7 +174,7 @@ function makeSlider(root,onPass){
   var hintEl=document.getElementById('loginHint');
   var cta=document.getElementById('loginCta');
   var currentUser=null; /* null = 未登录；登录后驱动导航/CTA/弹窗三处 UI 同步 */
-  var adminHref='';     /* 专属入口秘径，仅 /me 下发给管理员本人 */
+  var adminHref='';     /* 专属入口路径，仅 /me 下发给管理员本人 */
   var probeState='';    /* ''未知 on在线 off离线 —— 在线后不再重复探测 */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
@@ -217,9 +217,9 @@ function makeSlider(root,onPass){
     adminHref=LOGIN_API+path;
     var a=document.createElement('a');a.href=adminHref;a.textContent='专属入口';
     slot.insertBefore(a,slot.firstChild);
-    /* 账号区按钮同步：文字仅在确认管理员身份后由 JS 写入，源码不出现后台字样 */
+    /* 账号区按钮同步：文字仅在确认身份后由 JS 写入，源码不出现敏感字样 */
     var adm=document.getElementById('meAdminBtn');
-    if(adm){adm.href=adminHref;adm.textContent='管理后台';}
+    if(adm){adm.href=adminHref;adm.textContent='专属入口';}
   }
   /* 粉丝入口：领过粉丝福利（/fan/status.claimed）才在账户区显示——隐藏粉丝页
      的唯一官方入口（未领取/灰度外都不显示；页面本身 noindex + 导航无链接）。 */
@@ -296,7 +296,7 @@ function makeSlider(root,onPass){
       .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d};});})
       .then(function(x){
         if(!x.ok){m.className='msg err';m.textContent='失败：'+(x.d.error||'未知');return;}
-        /* 无刷新登录：直接切登录态 + toast；管理入口异步补齐（/me 才下发秘径） */
+        /* 无刷新登录：直接切登录态 + toast；专属入口异步补齐（/me 才下发路径） */
         setTok(x.d.sid || t);mask.classList.remove('show');
         renderUser(x.d.user);
         renderFanEntry();
@@ -344,7 +344,7 @@ document.querySelectorAll('[data-act]').forEach(function(el){
 });
 
 /* ===== 站点公告：读取后端 /notices（公开只读），展示最新一条高优先级公告 =====
-   后台「公告发布」页面写入，此处只读；无公告或接口不可用时整块隐藏，不影响首屏。 */
+   服务端发布，此处只读；无公告或接口不可用时整块隐藏，不影响首屏。 */
 (function(){
   var PAGES_ORIGIN = 'https://mox-site.pages.dev';
   var API = location.hostname.endsWith('.pages.dev') ? '' : PAGES_ORIGIN;

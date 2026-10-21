@@ -209,7 +209,7 @@ function makeSlider(root,onPass){
     slot.insertBefore(a,slot.firstChild);
     /* Account-area button: label only written after admin identity is confirmed; source stays clean */
     var adm=document.getElementById('meAdminBtn');
-    if(adm){adm.href=adminHref;adm.textContent='Admin console';}
+    if(adm){adm.href=adminHref;adm.textContent='Exclusive entry';}
   }
   /* Fan entry: shown in the account area only after fan benefits are claimed
      (/fan/status.claimed) — the sole official entry to the hidden fan page. */
