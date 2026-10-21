@@ -104,6 +104,9 @@
 
 ```bash
 python3 -m http.server 8080
+<p align="center"><img src="assets/logo.svg" width="128" alt="MoX"/></p>
+
+
 # 浏览器打开 http://localhost:8080
 ```
 
