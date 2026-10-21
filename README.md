@@ -1,3 +1,5 @@
+> **🌐 主仓库在 GitHub** — [`codecloud-dev/mox-site`](https://github.com/codecloud-dev/mox-site) 是唯一主源：Issue、Pull Request、功能讨论请统一提交到 GitHub。[Gitee 镜像](https://gitee.com/thousand-code-crafts/mox-site) 仅供国内高速只读访问，每小时从 GitHub 自动同步。
+
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-8a7bff" alt="version">
   <img src="https://img.shields.io/badge/license-MIT-37d5d3" alt="license">
