@@ -68,7 +68,12 @@ export async function proxy(context) {
     if (ck) req.headers.set('Cookie', ck);
     req.headers.set('X-Forwarded-Host', url.host);
     const res = await fetch(req, { redirect: 'manual' });
+    // ⚠️ new Response(body, res) 会吞掉 Set-Cookie（Headers guard 过滤 forbidden header），
+    // 导致 OAuth 回调种的 mox_sid 到不了浏览器 → 官网登录后进后台还要再登一次（SSO 断链根因）。
+    // 必须逐条显式补种。
+    const setCookies = typeof res.headers.getSetCookie === 'function' ? res.headers.getSetCookie() : [];
     const out = new Response(res.body, res);
+    for (const c of setCookies) out.headers.append('Set-Cookie', c);
     out.headers.set('X-Content-Type-Options', 'nosniff');
     out.headers.delete('X-Frame-Options'); // 302 跳转与 API 无框架风险，保留官网 _headers 的 DENY 于页面即可
     // CORS：按请求来源回显白名单内的 origin（未命中则不发 CORS 头，避免 CSRF）

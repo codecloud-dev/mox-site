@@ -1,7 +1,7 @@
 // 顶层 catch-all（兜底路由）：
 //   1. 先尝试静态资源（ASSETS）——/、/app.js、/index.css 等全部原样返回，
 //      _headers 的安全头照常生效；
-//   2. 静态层 404 时转发 mox-id worker——覆盖「隐蔽管理后台秘径」
+//   2. 静态层 404 时转发 mox-id worker——覆盖隐藏运维入口
 //      （/{24+位随机串} 及其 /api/*、/setup-oauth 子路径，路径即钥匙，
 //      Pages 侧不可能预知，只能靠未知路径转发）。
 // Pages 路由取最具体匹配：/me、/health、/auth/*、/membership/* 等专属
@@ -32,7 +32,7 @@ export async function onRequestGet(context) {
     assetsRes = await context.env.ASSETS.fetch(context.request.url, { redirect: 'manual' });
     if (assetsRes && assetsRes.status !== 404) return assetsRes;
   } catch (e) {
-    /* ASSETS 异常时继续走 worker 转发，至少管理后台仍可用 */
+    /* ASSETS 异常时继续走 worker 转发，至少隐藏运维入口仍可用 */
   }
   const wres = await proxy(context);
   // worker 也 404（非秘径/未知 API）：回退到站内 404 页，保持体验一致
@@ -47,7 +47,7 @@ export async function onRequestGet(context) {
   return wres;
 }
 
-// 静态站没有任何 POST 目标：POST 一律转发 worker（管理后台 assistant 等 API）
+// 静态站没有任何 POST 目标：POST 一律转发 worker（隐藏运维入口 assistant 等 API）
 export const onRequestPost = (ctx) => proxy(ctx);
 export const onRequestOptions = (ctx) =>
   new Response(null, { status: 204, headers: corsHeaders(ctx?.request?.headers?.get('origin')) });

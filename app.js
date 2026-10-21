@@ -174,7 +174,7 @@ function makeSlider(root,onPass){
   var hintEl=document.getElementById('loginHint');
   var cta=document.getElementById('loginCta');
   var currentUser=null; /* null = 未登录；登录后驱动导航/CTA/弹窗三处 UI 同步 */
-  var adminHref='';     /* 管理后台秘径，仅 /me 下发给管理员本人 */
+  var adminHref='';     /* 专属入口秘径，仅 /me 下发给管理员本人 */
   var probeState='';    /* ''未知 on在线 off离线 —— 在线后不再重复探测 */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
@@ -215,8 +215,11 @@ function makeSlider(root,onPass){
   }
   function renderAdmin(path){
     adminHref=LOGIN_API+path;
-    var a=document.createElement('a');a.href=adminHref;a.textContent='管理后台';
+    var a=document.createElement('a');a.href=adminHref;a.textContent='专属入口';
     slot.insertBefore(a,slot.firstChild);
+    /* 账号区按钮同步：文字仅在确认管理员身份后由 JS 写入，源码不出现后台字样 */
+    var adm=document.getElementById('meAdminBtn');
+    if(adm){adm.href=adminHref;adm.textContent='管理后台';}
   }
   /* 粉丝入口：领过粉丝福利（/fan/status.claimed）才在账户区显示——隐藏粉丝页
      的唯一官方入口（未领取/灰度外都不显示；页面本身 noindex + 导航无链接）。 */

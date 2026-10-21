@@ -79,7 +79,7 @@
     <div class="card glass fadeup">
       <span class="status on">✅ Live</span>
       <h3>mox-id</h3>
-      <p>MoX's unified identity & account base: one-click GitHub login, cloud sync, membership, billing, admin console.</p>
+      <p>MoX's unified identity & account base: one-click GitHub login, cloud sync, membership, billing.</p>
       <a class="more" href="#account">Account & cloud sync ↓</a>
     </div>
     <div class="card glass fadeup">
@@ -143,18 +143,13 @@
 <section id="account" class="wrap">
   <div class="sec-head fadeup">
     <div class="sec-title">One MoX account, every device</div>
-    <p class="sec-desc">All MoX products share one identity (powered by the <b>mox-id</b> backend). After sign-in, normal users and admins each get what they need.</p>
+    <p class="sec-desc">All MoX products share one identity (powered by the <b>mox-id</b> backend). After sign-in, cloud sync is ready to use.</p>
   </div>
   <div class="grid">
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <h3>Normal users · cloud sync</h3>
       <p>Multi-device config and command history sync in real time; AI quota shared across devices. Any GitHub user can sign in, free to start.</p>
-    </div>
-    <div class="card glass fadeup">
-      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
-      <h3>Admins · admin console</h3>
-      <p>An "Admin console" entry appears after sign-in — for membership tiers, billing reconciliation, content & ops. The entry is a secret path, delivered only to admins.</p>
     </div>
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
@@ -164,7 +159,7 @@
   </div>
   <div class="glass support fadeup" style="margin-top:22px">
     <div class="sec-title" style="font-size:24px">Want to try first?</div>
-    <p class="sec-desc">Tap "Sign in" at the top-right to enter with your GitHub account. Normal users get cloud sync right away; admins see a dedicated console entry.</p>
+    <p class="sec-desc">Tap "Sign in" at the top-right to enter with your GitHub account and enjoy cloud sync right away.</p>
     <a class="btn primary" id="loginCta" href="#">Sign in to MoX</a>
   </div>
 </section>
@@ -452,7 +447,6 @@
     </div>
     <div class="login-blocks">
       <div class="lb"><span class="lbi">👤</span><div><b>Normal users</b>: cloud sync (multi-device config / command history in real time), AI assistant on call.</div></div>
-      <div class="lb"><span class="lbi">🛡️</span><div><b>Admins</b>: an "Admin console" entry appears after sign-in — for membership, billing, content.</div></div>
       <div class="lb"><span class="lbi">🔒</span><div><b>Security</b>: sign in with GitHub; credentials stay local; cloud-sync data is client-encrypted.</div></div>
     </div>
     <div id="loginBox">
@@ -468,7 +462,7 @@
       <div class="lb"><span class="lbi">✅</span><div>Signed in as <b id="meName"></b>. Credentials stay in this browser; sign out anytime.</div></div>
       <div class="row">
         <a id="meFanBtn" class="gh" style="display:none" href="fan.html" rel="opener">Fan zone</a>
-        <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">Open admin console</a>
+        <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">Exclusive entry</a>
         <button id="meLogoutBtn" class="primary">Sign out</button>
         <button id="meCloseBtn">Close</button>
       </div>

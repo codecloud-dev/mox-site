@@ -64,7 +64,7 @@
   </div>
 </header>
 
-<!-- ===== 站点公告（后台发布，/notices 公开只读）===== -->
+<!-- ===== 站点公告（服务端发布，/notices 公开只读）===== -->
 <section id="noticeBar" class="wrap" style="display:none">
   <div class="glass" style="padding:14px 18px;margin-bottom:22px">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -92,7 +92,7 @@
     <div class="card glass fadeup">
       <span class="status on">✅ 已上线</span>
       <h3>mox-id</h3>
-      <p>MoX 的统一身份与账户底座：任意 GitHub 用户一键登录，云同步、会员、计费、管理后台都从这里走。</p>
+      <p>MoX 的统一身份与账户底座：任意 GitHub 用户一键登录，云同步、会员、计费都从这里走。</p>
       <a class="more" href="#account">账号与云同步 ↓</a>
     </div>
     <div class="card glass fadeup">
@@ -158,18 +158,13 @@
 <section id="account" class="wrap">
   <div class="sec-head fadeup">
     <div class="sec-title">一个 MoX 账号，串起所有设备</div>
-    <p class="sec-desc">所有 MoX 产品共用同一套身份（由 <b>mox-id</b> 后端提供）。登录后，普通用户和管理员各取所需。</p>
+    <p class="sec-desc">所有 MoX 产品共用同一套身份（由 <b>mox-id</b> 后端提供）。登录后即可使用云同步，免费起步。</p>
   </div>
   <div class="grid">
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
       <h3>普通用户 · 云同步</h3>
       <p>多设备配置、命令历史实时同步；AI 助手额度跨设备共享。任意 GitHub 用户都能登录，免费起步。</p>
-    </div>
-    <div class="card glass fadeup">
-      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
-      <h3>管理员 · 管理后台</h3>
-      <p>登录后自动出现「管理后台」入口，用于会员档位、计费对账、内容管理与运营数据。入口是秘径，只下发给管理员本人。</p>
     </div>
     <div class="card glass fadeup">
       <div class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
@@ -179,7 +174,7 @@
   </div>
   <div class="glass support fadeup" style="margin-top:22px">
     <div class="sec-title" style="font-size:24px">想先试试？</div>
-    <p class="sec-desc">点右上角「登录」即可用 GitHub 账号进入。普通用户直接享受云同步，管理员会看到专属后台入口。</p>
+    <p class="sec-desc">点右上角「登录」即可用 GitHub 账号进入，直接享受云同步。</p>
     <a class="btn primary" id="loginCta" href="#">登录 MoX 账号</a>
   </div>
 </section>
@@ -486,7 +481,7 @@
       <div class="lb"><span class="lbi">✅</span><div>当前已登录为 <b id="meName"></b>。凭证仅保存在本机浏览器，可随时退出。</div></div>
       <div class="row">
         <a id="meFanBtn" class="gh" style="display:none" href="fan.html" rel="opener">粉丝专区</a>
-        <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">进入管理后台</a>
+        <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">专属入口</a>
         <button id="meLogoutBtn" class="primary">退出登录</button>
         <button id="meCloseBtn">关闭</button>
       </div>

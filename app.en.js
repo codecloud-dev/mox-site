@@ -166,7 +166,7 @@ function makeSlider(root,onPass){
   var hintEl=document.getElementById('loginHint');
   var cta=document.getElementById('loginCta');
   var currentUser=null; /* null = signed out; drives nav / CTA / modal UI in sync once signed in */
-  var adminHref='';     /* Admin console secret path, delivered only to admins via /me */
+  var adminHref='';     /* Exclusive entry path, delivered only to admins via /me */
   var probeState='';    /* ''unknown on online off offline — skip probing once online */
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
@@ -205,8 +205,11 @@ function makeSlider(root,onPass){
   }
   function renderAdmin(path){
     adminHref=LOGIN_API+path;
-    var a=document.createElement('a');a.href=adminHref;a.textContent='Console';
+    var a=document.createElement('a');a.href=adminHref;a.textContent='Exclusive entry';
     slot.insertBefore(a,slot.firstChild);
+    /* Account-area button: label only written after admin identity is confirmed; source stays clean */
+    var adm=document.getElementById('meAdminBtn');
+    if(adm){adm.href=adminHref;adm.textContent='Admin console';}
   }
   /* Fan entry: shown in the account area only after fan benefits are claimed
      (/fan/status.claimed) — the sole official entry to the hidden fan page. */
