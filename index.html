@@ -17,8 +17,9 @@
 <link rel="stylesheet" href="index.css">
 </head>
 <body>
+<canvas id="gpuBg" aria-hidden="true"></canvas>
 <nav class="glass">
-  <div class="brand"><span class="mark"></span><span>MoX</span></div>
+  <div class="brand"><img class="mark" src="favicon.svg" alt="MoX" width="26" height="26"><span>MoX</span></div>
   <div class="links">
     <a href="#products">产品</a>
     <a href="#features">moxsh 特性</a>
@@ -349,7 +350,7 @@
       <h3>爱发电赞助</h3>
       <p>如果 MoX 帮到了你，一杯咖啡的赞助就能让它走得更远。项目统一走爱发电。</p>
       <a class="link" href="https://afdian.com/a/cloudharbor" target="_blank" rel="noopener">去爱发电 →</a>
-      <p style="margin-top:12px"><img src="assets/afdian-qr.jpg" width="180" alt="爱发电赞助码"></p>
+      <p style="margin-top:12px"><img src="assets/afdian-qr.jpg" width="180" alt="爱发电赞助码" loading="lazy" decoding="async"></p>
     </div>
     <div class="comm glass fadeup">
       <div class="cico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
@@ -434,10 +435,11 @@
 </section>
 
 <footer class="wrap">
-  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> MoX</div>
+  <div class="fb"><img src="favicon.svg" alt="MoX" style="width:20px;height:20px;border-radius:6px;display:inline-block;vertical-align:-3px"> MoX</div>
   <div>© 2026 MoX · 由独立开发者与 AI 协作构建</div>
   <div>开源仓库与全部构建产物，均可在 <a href="#" id="ghLink">GitHub</a> 获取</div>
   <div style="margin-top:8px"><a href="#" id="ghStar">如果它帮到你，别忘了点个 Star ★</a></div>
+  <div style="margin-top:8px">本站背景由 <a href="/webgpu/">moxwebgpu</a> 在你的 GPU 上实时计算</div>
 </footer>
 
 <!-- 人机验证闸（异常访问时弹出，滑动即过，无需答题） -->
@@ -467,6 +469,7 @@
     <div class="login-blocks">
       <div class="lb"><span class="lbi">👤</span><div><b>普通用户</b>：云同步（多设备配置 / 命令历史实时同步），AI 助手随时调用。</div></div>
       <div class="lb"><span class="lbi">🔒</span><div><b>安全</b>：通过 GitHub 登录，凭证仅存本地；云同步内容客户端加密。</div></div>
+      <div class="lb"><span class="lbi">🔗</span><div><b>一个账号，两种登录</b>：登录后可在下方同时绑定 GitHub 和 Gitee——国内走 Gitee 更快，国外走 GitHub 更顺，云同步数据完全同步。</div></div>
     </div>
     <div id="loginBox">
       <a class="gh" id="ghLoginBtn" href="#">使用 GitHub 登录</a>
@@ -486,12 +489,19 @@
         <button id="meLogoutBtn" class="primary">退出登录</button>
         <button id="meCloseBtn">关闭</button>
       </div>
+      <!-- 账号绑定：一个 MoX 账号绑多个 OAuth 身份（GitHub / Gitee 任选，至少保留一个） -->
+      <div class="bind-block" id="bindBlock">
+        <div class="bind-title">账号绑定</div>
+        <div class="bind-list" id="bindList"></div>
+      </div>
     </div>
     <div class="msg" id="loginMsg"></div>
     <div class="login-hint" id="loginHint"></div>
   </div>
 </div>
 
+<script src="/webgpu/moxwebgpu.browser.js" defer></script>
+<script src="gpu-bg.js" defer></script>
 <script src="app.js"></script>
 <script src="site-star.js"></script>
 <!-- Cloudflare Turnstile：真实人机验证（服务端 siteverify 校验）。

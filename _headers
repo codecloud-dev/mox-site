@@ -14,6 +14,15 @@
 /
   Cache-Control: no-store
 
+# CSS/JS：Pages 默认 max-age=0 must-revalidate（每次访问都 304 协商）。
+# 给 10 分钟强缓存 + 后台重验证：重复访问零请求，部署后最多 10 分钟全量生效。
+/index.css
+  Cache-Control: public, max-age=600, stale-while-revalidate=300
+/app.js
+  Cache-Control: public, max-age=600, stale-while-revalidate=300
+/fan-assets/*
+  Cache-Control: public, max-age=600, stale-while-revalidate=300
+
 # WebGPU SDK 资源：允许任意前端跨域引用（<script src> 或 ES module import），
 # 支撑「任何有自己官网/前端的项目都能直接调 GPU」的设想
 /webgpu/*

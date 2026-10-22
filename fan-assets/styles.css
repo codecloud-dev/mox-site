@@ -48,8 +48,8 @@ header.hero { text-align: center; padding: 36px 0 8px; }
   background: var(--glass);
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(13px);
+  -webkit-backdrop-filter: blur(13px);
   box-shadow: var(--shadow);
 }
 .card { padding: 22px; margin: 16px 0; }

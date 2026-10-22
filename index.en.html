@@ -17,8 +17,9 @@
 <link rel="stylesheet" href="index.en.css">
 </head>
 <body>
+<canvas id="gpuBg" aria-hidden="true"></canvas>
 <nav class="glass">
-  <div class="brand"><span class="mark"></span><span>MoX</span></div>
+  <div class="brand"><img class="mark" src="favicon.svg" alt="MoX" width="26" height="26"><span>MoX</span></div>
   <div class="links">
     <a href="#products">Products</a>
     <a href="#features">moxsh</a>
@@ -333,7 +334,7 @@
       <h3>Support on Afdian</h3>
       <p>If MoX helped you, a coffee-sized tip keeps it going further. The project uses Afdian for sponsorship.</p>
       <a class="link" href="https://afdian.com/a/cloudharbor" target="_blank" rel="noopener">Go to Afdian →</a>
-      <p style="margin-top:12px"><img src="assets/afdian-qr.jpg" width="180" alt="Afdian sponsorship QR code"></p>
+      <p style="margin-top:12px"><img src="assets/afdian-qr.jpg" width="180" alt="Afdian sponsorship QR code" loading="lazy" decoding="async"></p>
     </div>
     <div class="comm glass fadeup">
       <div class="cico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
@@ -417,10 +418,11 @@
 </section>
 
 <footer class="wrap">
-  <div class="fb"><span class="mark" style="width:20px;height:20px;border-radius:6px;display:inline-block;background:var(--accent)"></span> MoX</div>
+  <div class="fb"><img src="favicon.svg" alt="MoX" style="width:20px;height:20px;border-radius:6px;display:inline-block;vertical-align:-3px"> MoX</div>
   <div>© 2026 MoX · Built by an indie developer with AI</div>
   <div>Source & all build artifacts on <a href="#" id="ghLink">GitHub</a></div>
   <div style="margin-top:8px"><a href="#" id="ghStar">If it helps, don't forget a Star ★</a></div>
+  <div style="margin-top:8px">This site's background is computed in real time on your GPU by <a href="/webgpu/">moxwebgpu</a></div>
 </footer>
 
 <div id="gate" class="gate" aria-hidden="true">
@@ -448,6 +450,7 @@
     <div class="login-blocks">
       <div class="lb"><span class="lbi">👤</span><div><b>Normal users</b>: cloud sync (multi-device config / command history in real time), AI assistant on call.</div></div>
       <div class="lb"><span class="lbi">🔒</span><div><b>Security</b>: sign in with GitHub; credentials stay local; cloud-sync data is client-encrypted.</div></div>
+      <div class="lb"><span class="lbi">🔗</span><div><b>One account, two sign-ins</b>: after signing in you can bind both GitHub and Gitee below — Gitee is faster in China, GitHub abroad, with cloud sync fully shared.</div></div>
     </div>
     <div id="loginBox">
       <a class="gh" id="ghLoginBtn" href="#">Sign in with GitHub</a>
@@ -466,6 +469,11 @@
         <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">Exclusive entry</a>
         <button id="meLogoutBtn" class="primary">Sign out</button>
         <button id="meCloseBtn">Close</button>
+      </div>
+      <!-- Account binding: one MoX account, multiple OAuth identities (bind GitHub / Gitee, keep at least one) -->
+      <div class="bind-block" id="bindBlock">
+        <div class="bind-title">Account binding</div>
+        <div class="bind-list" id="bindList"></div>
       </div>
     </div>
     <div class="msg" id="loginMsg"></div>

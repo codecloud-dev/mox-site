@@ -30,14 +30,21 @@
       radial-gradient(56rem 46rem at 105% 8%, rgba(129,140,248,.10), transparent 55%),
       radial-gradient(50rem 50rem at 50% 115%, rgba(129,140,248,.05), transparent 55%);
   }
-  /* 缓慢漂移的低饱和光晕（transform 合成动画，blur 已降档） */
+  /* 缓慢漂移的低饱和光晕（transform 合成动画；radial-gradient 终点已全透明，
+     44px CSS filter blur 属冗余柔化且每帧全屏重算——已降档到 16px，观感无损） */
   body::after{
-    content:"";position:fixed;inset:-25%;z-index:-3;pointer-events:none;filter:blur(44px);opacity:.5;
+    content:"";position:fixed;inset:-25%;z-index:-3;pointer-events:none;filter:blur(16px);opacity:.5;
     background:radial-gradient(28rem 28rem at 25% 35%, rgba(129,140,248,.16), transparent 60%),
                radial-gradient(26rem 26rem at 78% 62%, rgba(94,234,212,.12), transparent 60%);
     animation:drift 32s ease-in-out infinite alternate;will-change:transform;
   }
   @keyframes drift{0%{transform:translate3d(-2%,-1%,0) scale(1.05)}100%{transform:translate3d(3%,2%,0) scale(1.1)}}
+
+  /* GPU 背景（moxwebgpu kernel 实时计算光晕密度场，canvas 低分辨率放大铺满）：
+     WebGPU 不可用时本元素不出现，body::after 的 CSS 版无缝接替（外观不变） */
+  #gpuBg{position:fixed;inset:0;width:100%;height:100%;z-index:-3;pointer-events:none;opacity:0;transition:opacity .8s ease}
+  #gpuBg.on{opacity:.5}
+  body.gpu-bg::after{display:none}
 
   /* 屏外区块整段跳过渲染（滚动进视口才绘制），长页顺滑的关键 */
   section{content-visibility:auto;contain-intrinsic-size:auto 760px}
@@ -51,7 +58,7 @@
     background-size:260% 260%, auto;
     background-position:62% 0, 0 0;
     border:1px solid var(--stroke);border-radius:var(--radius);
-    backdrop-filter:blur(15px) saturate(160%);-webkit-backdrop-filter:blur(15px) saturate(160%);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
     box-shadow:0 22px 55px -26px rgba(0,0,0,.72),
       inset 0 1px 0 rgba(255,255,255,.22),
       inset 0 0 0 1px rgba(255,255,255,.05);
@@ -67,15 +74,15 @@
     transform:translate3d(calc(var(--mx,50%) - 50%), calc(var(--my,50%) - 50%), 0);will-change:transform;}
   .glass:hover::after{opacity:1}
   /* 低端/小屏降耗：玻璃减薄 */
-  @media (max-width:640px){.glass{backdrop-filter:blur(10px) saturate(150%);-webkit-backdrop-filter:blur(10px) saturate(150%)}}
+  @media (max-width:640px){.glass{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}}
 
   .wrap{width:min(1080px,90vw);margin:0 auto}
   nav{position:sticky;top:16px;z-index:50;width:min(1080px,90vw);margin:16px auto 0;
     display:flex;align-items:center;gap:20px;padding:13px 22px;}
   .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:17px;letter-spacing:-.01em}
-  .brand .mark{width:26px;height:26px;border-radius:8px;flex:none;
-    background:var(--accent);box-shadow:0 4px 16px rgba(129,140,248,.35), inset 0 1px 1px rgba(255,255,255,.5);position:relative;overflow:hidden}
-  .brand .mark::after{content:"";position:absolute;inset:0;background:linear-gradient(150deg,rgba(255,255,255,.55),transparent 45%);}
+  .brand .mark{width:26px;height:26px;border-radius:8px;flex:none;display:block;
+    box-shadow:0 4px 16px rgba(129,140,248,.35);position:relative;overflow:hidden}
+  .brand .mark::after{content:"";position:absolute;inset:0;background:linear-gradient(150deg,rgba(255,255,255,.55),transparent 45%);pointer-events:none}
   nav .links{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
   nav a{color:var(--dim);font-size:14px;padding:8px 14px;border-radius:11px;transition:.2s}
   nav a:hover{color:var(--text);background:rgba(255,255,255,.06)}
@@ -83,7 +90,7 @@
 
   header{padding:clamp(56px,11vh,120px) 0 30px;text-align:center;position:relative}
   .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);
-    border:1px solid var(--stroke);border-radius:999px;padding:7px 16px;background:rgba(255,255,255,.03);backdrop-filter:blur(8px)}
+    border:1px solid var(--stroke);border-radius:999px;padding:7px 16px;background:rgba(255,255,255,.03);backdrop-filter:blur(6px)}
   .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent-a);box-shadow:0 0 10px var(--accent-a)}
   h1{margin:26px 0 18px;font-size:clamp(42px,7.6vw,80px);line-height:1.04;letter-spacing:-.035em;font-weight:700}
   h1 .em{background:var(--accent);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -91,7 +98,7 @@
   .hero-cta{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;padding:14px 26px;border-radius:14px;
     font-size:15px;font-weight:600;border:1px solid var(--stroke);color:var(--text);background:var(--glass);
-    backdrop-filter:blur(12px);transition:transform .2s ease, background .2s, box-shadow .2s}
+    backdrop-filter:blur(10px);transition:transform .2s ease, background .2s, box-shadow .2s}
   .btn:hover{transform:translateY(-2px);background:var(--glass-2)}
   .btn.primary{background:var(--accent);border-color:transparent;color:#06121a;font-weight:700;
     box-shadow:0 12px 34px -10px rgba(129,140,248,.55), inset 0 1px 0 rgba(255,255,255,.45)}
@@ -101,7 +108,7 @@
   .stage{margin:54px auto 0;display:flex;justify-content:center;perspective:1600px}
   .device{position:relative;width:min(300px,78vw);aspect-ratio:9/19;border-radius:44px;padding:11px;
     background:linear-gradient(150deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
-    border:1px solid var(--stroke-hi);backdrop-filter:blur(26px) saturate(170%);
+    border:1px solid var(--stroke-hi);backdrop-filter:blur(18px);
     box-shadow:0 50px 110px -34px rgba(0,0,0,.8), inset 0 2px 0 rgba(255,255,255,.28), inset 0 0 50px rgba(129,140,248,.08);
     transform:rotateX(var(--rx,4deg)) rotateY(var(--ry,-7deg));
     transform-style:preserve-3d;transition:transform .25s ease;will-change:transform}
@@ -167,13 +174,13 @@
   .fadeup.in{opacity:1;transform:none}
   .toast{position:fixed;left:50%;bottom:36px;transform:translateX(-50%) translateY(20px);background:var(--glass-2);
     border:1px solid var(--stroke);border-radius:13px;padding:12px 22px;font-size:14px;opacity:0;pointer-events:none;
-    transition:.3s;z-index:120;backdrop-filter:blur(16px);box-shadow:0 14px 40px -16px rgba(0,0,0,.7)}
+    transition:.3s;z-index:120;backdrop-filter:blur(12px);box-shadow:0 14px 40px -16px rgba(0,0,0,.7)}
   .toast.show{opacity:1;transform:translateX(-50%)}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.fadeup{opacity:1;transform:none}}
 
   /* ===== 人机验证闸 ===== */
   .gate{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:20px;
-    background:rgba(4,5,10,.62);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px)}
+    background:rgba(4,5,10,.62);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px)}
   .gate.on{display:flex;animation:gateIn .4s ease}
   @keyframes gateIn{from{opacity:0}to{opacity:1}}
   .gate-card{max-width:380px;width:100%;text-align:center;padding:34px 30px}
@@ -199,7 +206,7 @@
   #authSlot img.av{width:28px;height:28px;border-radius:50%;border:1px solid var(--stroke-hi);object-fit:cover}
   #loginBtn{color:var(--text)!important;background:linear-gradient(120deg,#5eead4,#818cf8);-webkit-background-clip:text;background-clip:text;font-weight:700}
   .modal-mask{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
-    background:rgba(3,4,9,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:20px}
+    background:rgba(3,4,9,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);padding:20px}
   .modal-mask.show{display:flex}
   .modal{width:min(420px,94vw);padding:26px 24px}
   .modal h3{margin:0 0 4px;font-size:18px}
@@ -243,6 +250,21 @@
   .login-hint a{color:#ffd0a8;text-decoration:underline}
   /* GitHub 按钮点击即时反馈（跳转前 0 等待感） */
   .modal a.gh.busy{opacity:.65;pointer-events:none}
+  /* 账号绑定区（一个 MoX 账号绑多个 OAuth 身份） */
+  .bind-block{margin-top:16px;text-align:left}
+  .bind-title{font-size:12px;font-weight:650;color:var(--dim);margin-bottom:8px;letter-spacing:.02em}
+  .bind-list{display:flex;flex-direction:column;gap:8px}
+  .bind-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--dim);
+    background:rgba(255,255,255,.03);border:1px solid var(--stroke);border-radius:12px;padding:9px 12px}
+  .bind-row .bi{font-size:14px;flex:none;line-height:1.3}
+  .bind-row .bn{color:var(--text);font-weight:600}
+  .bind-row .bs{margin-left:auto;display:flex;gap:8px;flex:none}
+  .bind-row .bs a,.bind-row .bs button{font-size:12px;padding:5px 11px;border-radius:8px;white-space:nowrap}
+  .bind-row .bs a{border:1px solid var(--stroke);color:var(--dim);text-decoration:none;transition:.2s}
+  .bind-row .bs a:hover{border-color:#8b5cf6;color:#c4b5fd}
+  .bind-row .bs button.unbind{border:1px solid var(--stroke);background:none;color:var(--faint);cursor:pointer;transition:.2s}
+  .bind-row .bs button.unbind:hover{border-color:#ff8da3;color:#ff8da3}
+  .bind-row .tag{font-size:11px;color:#7CFFB2;border:1px solid rgba(124,255,178,.3);border-radius:6px;padding:1px 7px;flex:none}
 
   /* ===== 联系门槛组件（邮箱滑块 / QQ 登记表单） ===== */
   .slider.mini{height:44px;margin-top:12px}

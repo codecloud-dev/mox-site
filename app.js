@@ -1,12 +1,29 @@
-/* GitHub 地址 base64 分段，避免源码明文账号 */
+/* GitHub / Gitee 镜像地址 base64 分段，避免源码明文账号。
+   国内外分流（_middleware.js 注入 window.__mox_region）：
+   静态 <a href> 由边缘中间件按国家改写；本文件的 JS 动态链接（Star/仓库按钮）
+   中间件改不到，必须在这里按 region 选基址——国内走 Gitee 镜像（快），国外走 GitHub 主源。 */
 var GH_BASE = (function(){var seg=['aHR0cHM6Ly9naXRodWIuY29tLw==','Y29kZWNsb3VkLWRldg==','bW94c2gtdGVybWluYWw='];return seg.map(function(x){return atob(x);}).join('');})();
+var GE_BASE = (function(){var seg=['aHR0cHM6Ly9naXRlZS5jb20v','dGhvdXNhbmQtY29kZS1jcmFmdHMv','bW94c2gtdGVybWluYWw='];return seg.map(function(x){return atob(x);}).join('');})();
+/* /region.js 注入在 body 末尾（app.js 之后加载），执行到此 __mox_region 通常还没定义：
+   轮询等待（最多 2s），超时按 global 兜底——绝不让链接悬空。 */
+function whenRegion(fn){
+  if(window.__mox_region)return fn();
+  var n=0,iv=setInterval(function(){
+    if(window.__mox_region||++n>40){clearInterval(iv);fn();}
+  },50);
+}
 
 /* 联系方式（QQ / 邮箱）的原始值已移至服务端 functions/contact.js：
    仅当「已登录会话 + 通过 Turnstile 真人验证」后，由 /contact 下发到前端，
    不再以明文常量出现在任何客户端 JS 中，纯爬虫读不到。 */
-/* 指针光斑（rAF 节流：光斑层由 transform 合成驱动，更新零重绘） */
+/* 指针光斑（rect 缓存 + rAF 节流：scroll/resize 只置脏，pointermove 按需重算） */
 var _lr=0,_lx=0,_ly=0,_le=null;
-function bindLight(el){el.addEventListener('pointermove',function(e){var r=el.getBoundingClientRect();
+function bindLight(el){
+  var r=el.getBoundingClientRect(),dirty=false;
+  addEventListener('scroll',function(){dirty=true;},{passive:true});
+  addEventListener('resize',function(){dirty=true;},{passive:true});
+  el.addEventListener('pointermove',function(e){
+    if(dirty){r=el.getBoundingClientRect();dirty=false;}
   _lx=(e.clientX-r.left)/r.width*100;_ly=(e.clientY-r.top)/r.height*100;_le=el;
   if(!_lr){_lr=requestAnimationFrame(function(){_lr=0;if(!_le)return;
     _le.style.setProperty('--mx',_lx.toFixed(2)+'%');_le.style.setProperty('--my',_ly.toFixed(2)+'%');});}}, {passive:true});}
@@ -21,10 +38,14 @@ function f(t){var ta=document.createElement('textarea');ta.value=t;ta.style.posi
 var tt=null;function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show');},2200);}
 
-/* 链接：下载 / GitHub / Star（dlLatest 的 href 由 HTML 直接指向 downloads.html，不在此覆盖） */
-document.getElementById('ghLink').href=GH_BASE;
-document.getElementById('starBtn').href=GH_BASE;
-document.getElementById('ghStar').href=GH_BASE;
+/* 链接：下载 / GitHub / Star（dlLatest 的 href 由 HTML 直接指向 downloads.html，不在此覆盖）。
+   按 region 选基址：国内 Gitee 镜像 / 国外 GitHub 主源（与中间件的静态链接改写同规则）。 */
+whenRegion(function(){
+  var base=(window.__mox_region==='cn')?GE_BASE:GH_BASE;
+  document.getElementById('ghLink').href=base;
+  document.getElementById('starBtn').href=base;
+  document.getElementById('ghStar').href=base;
+});
 
 /* 通用滑块（人机验证闸 / 邮箱门槛共用），拖到最右触发 onPass */
 function makeSlider(root,onPass){
@@ -32,9 +53,14 @@ function makeSlider(root,onPass){
   if(!knob)return null;
   function range(){return Math.max(0,root.clientWidth-knob.offsetWidth-8);}
   function setX(x){x=Math.max(0,Math.min(range(),x));knob.style.left=(x+4)+'px';fill.style.width=(x+knob.offsetWidth/2)+'px';return x;}
-  var drag=false;
+  var drag=false,px=0,pending=false;
   knob.addEventListener('pointerdown',function(e){drag=true;try{knob.setPointerCapture(e.pointerId);}catch(_){}});
-  window.addEventListener('pointermove',function(e){if(!drag)return;var r=root.getBoundingClientRect();setX(e.clientX-r.left-knob.offsetWidth/2);},{passive:true});
+  window.addEventListener('pointermove',function(e){
+    if(!drag)return;
+    var r=root.getBoundingClientRect();
+    px=e.clientX-r.left-knob.offsetWidth/2;
+    if(!pending){pending=requestAnimationFrame(function(){pending=0;setX(px);});}
+  },{passive:true});
   window.addEventListener('pointerup',function(){if(!drag)return;drag=false;
     if(parseFloat(knob.style.left||'0')>=range()*0.96){setX(range());if(text)text.textContent='验证通过 ✓';knob.querySelector('span').textContent='✓';setTimeout(onPass,400);}
     else setX(0);});
@@ -180,11 +206,6 @@ function makeSlider(root,onPass){
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
 
-  // OAuth 回跳带 ?token= 时存下并清 URL（replaceState 无感，不刷新）
-  (function(){var u=new URL(location.href);var t=u.searchParams.get('token');
-    if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
-  })();
-
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
 
   /* 后端可达性探测（JSON 守卫 + 结果缓存）：HTML fallback 不再误报在线 */
@@ -230,6 +251,93 @@ function makeSlider(root,onPass){
       .then(function(d){ var b=document.getElementById('meFanBtn'); if(b&&d&&d.claimed) b.style.display=''; })
       .catch(function(){});
   }
+
+  /* ===== 账号绑定：一个 MoX 账号绑多个 OAuth 身份（GitHub / Gitee 任选） =====
+     绑定走 /auth/<provider>/start?bind=1：OAuth 回调时带 mox_sid Cookie 定位当前
+     账号，把身份挂上来而不是新建账号（login/云同步/会员/管理资格全部保留）。
+     解绑走 POST /account/unbind {provider}，至少保留一个身份。 */
+  var BIND_OK_MSG='绑定成功，现在两种方式都能登录同一个账号了';
+  var BIND_ERR_MSG={
+    login_required:'绑定失败：登录会话已过期，请先登录再绑定',
+    taken:'绑定失败：该平台账号已绑定到另一个 MoX 账号',
+    duplicate:'绑定失败：当前账号已绑定过该平台（请先解绑）',
+    already_self:'该平台已经绑好了'
+  };
+  function bindToast(code){
+    if(code==='ok'){showToast(BIND_OK_MSG);return;}
+    showToast(BIND_ERR_MSG[code]||('绑定失败：'+code));
+  }
+  function renderBindList(){
+    var list=document.getElementById('bindList'); if(!list)return;
+    var t=getTok(); if(!t){list.innerHTML='';return;}
+    fetch(LOGIN_API+'/account/identities',{headers:{'Authorization':'Bearer '+t}})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){
+        if(!d||!d.identities)return;
+        var have={};
+        d.identities.forEach(function(i){have[i.provider]=i;});
+        var back=encodeURIComponent(location.href);
+        list.innerHTML='';
+        ['github','gitee'].forEach(function(p){
+          var bound=have[p];
+          var row=document.createElement('div');row.className='bind-row';
+          var name=document.createElement('span');name.className='bi';
+          name.textContent=p==='github'?'GitHub':'Gitee';
+          row.appendChild(name);
+          var who=document.createElement('span');
+          if(bound){
+            who.innerHTML='<span class="bn"></span> <span class="tag">已绑定</span>';
+            who.querySelector('.bn').textContent=bound.login||('ID '+bound.provider_uid);
+          }else{
+            who.innerHTML='<span style="color:var(--faint)">未绑定</span>';
+          }
+          row.appendChild(who);
+          var act=document.createElement('span');act.className='bs';
+          if(bound){
+            var ub=document.createElement('button');ub.className='unbind';ub.textContent='解绑';
+            ub.addEventListener('click',function(){
+              ub.disabled=true;ub.textContent='解绑中…';
+              fetch(LOGIN_API+'/account/unbind',{method:'POST',
+                headers:{'Authorization':'Bearer '+t,'content-type':'application/json'},
+                body:JSON.stringify({provider:p})})
+                .then(function(r){return r.json().then(function(dd){return{ok:r.ok,d:dd};});})
+                .then(function(x){
+                  if(x.ok&&x.d.ok){showToast('已解绑 '+name.textContent);renderBindList();}
+                  else if(x.d&&x.d.error==='last_identity'){showToast('至少保留一个登录方式');ub.disabled=false;ub.textContent='解绑';}
+                  else{showToast('解绑失败：'+((x.d&&x.d.error)||'未知'));ub.disabled=false;ub.textContent='解绑';}
+                })
+                .catch(function(){showToast('网络错误，解绑未完成');ub.disabled=false;ub.textContent='解绑';});
+            });
+            act.appendChild(ub);
+          }else{
+            var a=document.createElement('a');a.href=LOGIN_API+'/auth/'+p+'/start?bind=1&redirect='+back;
+            a.textContent='绑定';
+            a.addEventListener('click',function(){a.classList.add('busy');});
+            act.appendChild(a);
+            if(p==='gitee'){
+              /* 后端未配置 Gitee 凭据时静默隐藏（与登录按钮同手法：503 探测） */
+              fetch(a.href,{redirect:'manual'}).then(function(r){
+                if(r.status===503)act.style.display='none';
+              }).catch(function(){});
+            }
+          }
+          row.appendChild(act);
+          list.appendChild(row);
+        });
+      })
+      .catch(function(){});
+  }
+  var bindFeedback=null;
+  /* OAuth 回跳带 ?token= / ?bind= 时：token 存本地，bind 结果延后 toast（等登录态恢复），
+     两者都从 URL 清掉（replaceState 无感，不刷新） */
+  (function(){
+    var u=new URL(location.href);
+    var t=u.searchParams.get('token');
+    var b=u.searchParams.get('bind');
+    if(t){setTok(t);u.searchParams.delete('token');}
+    if(b){bindFeedback=b;u.searchParams.delete('bind');}
+    if(t||b)history.replaceState(null,'',u.pathname+u.search+u.hash);
+  })();
   function renderLogin(){
     currentUser=null;adminHref='';
     if(cta)cta.textContent='登录 MoX 账号';
@@ -267,6 +375,7 @@ function makeSlider(root,onPass){
         var adm=document.getElementById('meAdminBtn');
         if(adm){adm.style.display=adminHref?'':'none';adm.href=adminHref;}
       }
+      renderBindList();
       return;
     }
     if(lb)lb.style.display='';
@@ -345,6 +454,8 @@ function makeSlider(root,onPass){
         }else{
           delTok();renderLogin(); /* 死 token 清掉，避免每次刷新白跑一趟 */
         }
+        /* OAuth 绑定回跳的反馈（ok / 错误码）：等登录态恢复后 toast，避免抢跑 */
+        if(bindFeedback){var bf=bindFeedback;bindFeedback=null;bindToast(bf);}
       })
       .catch(function(){ renderLogin(); setStatus('off','登录服务暂时不可达'); });
   })();

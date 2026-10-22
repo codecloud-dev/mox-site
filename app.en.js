@@ -171,9 +171,6 @@ function makeSlider(root,onPass){
   function getTok(){try{return localStorage.getItem('mox_token')||'';}catch(e){return '';}}
   function setTok(t){try{localStorage.setItem('mox_token',t);}catch(e){}}
   function delTok(){try{localStorage.removeItem('mox_token');}catch(e){}}
-  (function(){var u=new URL(location.href);var t=u.searchParams.get('token');
-    if(t){setTok(t);u.searchParams.delete('token');history.replaceState(null,'',u.pathname+u.search+u.hash);}
-  })();
 
   function setStatus(cls,text){ if(!statusEl)return; statusEl.className='login-status '+cls; if(statusText)statusText.textContent=text; }
 
@@ -220,6 +217,94 @@ function makeSlider(root,onPass){
       .then(function(d){ var b=document.getElementById('meFanBtn'); if(b&&d&&d.claimed) b.style.display=''; })
       .catch(function(){});
   }
+
+  /* ===== Account binding: one MoX account, multiple OAuth identities (GitHub / Gitee) =====
+     Binding goes through /auth/<provider>/start?bind=1: the OAuth callback carries the
+     mox_sid cookie to locate the current account and attaches the identity to it instead
+     of creating a new one (login / cloud sync / membership / admin status all preserved).
+     Unbinding goes through POST /account/unbind {provider}; at least one identity is kept. */
+  var BIND_OK_MSG='Bound — you can now sign in with either method on the same account';
+  var BIND_ERR_MSG={
+    login_required:'Binding failed: your session expired, please sign in first',
+    taken:'Binding failed: that account is already bound to another MoX account',
+    duplicate:'Binding failed: this account already has that platform bound (unbind first)',
+    already_self:'That platform is already bound'
+  };
+  function bindToast(code){
+    if(code==='ok'){showToast(BIND_OK_MSG);return;}
+    showToast(BIND_ERR_MSG[code]||('Binding failed: '+code));
+  }
+  function renderBindList(){
+    var list=document.getElementById('bindList'); if(!list)return;
+    var t=getTok(); if(!t){list.innerHTML='';return;}
+    fetch(LOGIN_API+'/account/identities',{headers:{'Authorization':'Bearer '+t}})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(d){
+        if(!d||!d.identities)return;
+        var have={};
+        d.identities.forEach(function(i){have[i.provider]=i;});
+        var back=encodeURIComponent(location.href);
+        list.innerHTML='';
+        ['github','gitee'].forEach(function(p){
+          var bound=have[p];
+          var row=document.createElement('div');row.className='bind-row';
+          var name=document.createElement('span');name.className='bi';
+          name.textContent=p==='github'?'GitHub':'Gitee';
+          row.appendChild(name);
+          var who=document.createElement('span');
+          if(bound){
+            who.innerHTML='<span class="bn"></span> <span class="tag">Bound</span>';
+            who.querySelector('.bn').textContent=bound.login||('ID '+bound.provider_uid);
+          }else{
+            who.innerHTML='<span style="color:var(--faint)">Not bound</span>';
+          }
+          row.appendChild(who);
+          var act=document.createElement('span');act.className='bs';
+          if(bound){
+            var ub=document.createElement('button');ub.className='unbind';ub.textContent='Unbind';
+            ub.addEventListener('click',function(){
+              ub.disabled=true;ub.textContent='Unbinding…';
+              fetch(LOGIN_API+'/account/unbind',{method:'POST',
+                headers:{'Authorization':'Bearer '+t,'content-type':'application/json'},
+                body:JSON.stringify({provider:p})})
+                .then(function(r){return r.json().then(function(dd){return{ok:r.ok,d:dd};});})
+                .then(function(x){
+                  if(x.ok&&x.d.ok){showToast('Unbound '+name.textContent);renderBindList();}
+                  else if(x.d&&x.d.error==='last_identity'){showToast('Keep at least one sign-in method');ub.disabled=false;ub.textContent='Unbind';}
+                  else{showToast('Unbind failed: '+((x.d&&x.d.error)||'unknown'));ub.disabled=false;ub.textContent='Unbind';}
+                })
+                .catch(function(){showToast('Network error, unbind not completed');ub.disabled=false;ub.textContent='Unbind';});
+            });
+            act.appendChild(ub);
+          }else{
+            var a=document.createElement('a');a.href=LOGIN_API+'/auth/'+p+'/start?bind=1&redirect='+back;
+            a.textContent='Bind';
+            a.addEventListener('click',function(){a.classList.add('busy');});
+            act.appendChild(a);
+            if(p==='gitee'){
+              /* Silently hidden when the backend has no Gitee credentials (same 503 probe as the sign-in button) */
+              fetch(a.href,{redirect:'manual'}).then(function(r){
+                if(r.status===503)act.style.display='none';
+              }).catch(function(){});
+            }
+          }
+          row.appendChild(act);
+          list.appendChild(row);
+        });
+      })
+      .catch(function(){});
+  }
+  var bindFeedback=null;
+  /* OAuth redirects carrying ?token= / ?bind=: store the token, defer the bind result to a
+     toast (after the session is restored), and strip both from the URL (replaceState, no reload) */
+  (function(){
+    var u=new URL(location.href);
+    var t=u.searchParams.get('token');
+    var b=u.searchParams.get('bind');
+    if(t){setTok(t);u.searchParams.delete('token');}
+    if(b){bindFeedback=b;u.searchParams.delete('bind');}
+    if(t||b)history.replaceState(null,'',u.pathname+u.search+u.hash);
+  })();
   function renderLogin(){
     currentUser=null;adminHref='';
     if(cta)cta.textContent='Sign in to MoX';
@@ -257,6 +342,7 @@ function makeSlider(root,onPass){
         var adm=document.getElementById('meAdminBtn');
         if(adm){adm.style.display=adminHref?'':'none';adm.href=adminHref;}
       }
+      renderBindList();
       return;
     }
     if(lb)lb.style.display='';
@@ -336,6 +422,8 @@ function makeSlider(root,onPass){
         }else{
           delTok();renderLogin(); /* drop dead tokens so we don't retry them every reload */
         }
+        /* Feedback from an OAuth binding redirect (ok / error code): toast after the session is restored */
+        if(bindFeedback){var bf=bindFeedback;bindFeedback=null;bindToast(bf);}
       })
       .catch(function(){ renderLogin(); setStatus('off','Sign-in service temporarily unreachable'); });
   })();
