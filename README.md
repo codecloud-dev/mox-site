@@ -1,4 +1,4 @@
-> **🌐 主仓库在 GitHub** — [`codecloud-dev/mox-site`](https://mox-site.pages.dev/go.html?r=mox-site) 是唯一主源：Issue、Pull Request、功能讨论请统一提交到 GitHub。[Gitee 镜像](https://gitee.com/thousand-code-crafts/mox-site) 仅供国内高速只读访问，每小时从 GitHub 自动同步。
+> **🌐 主仓库在 GitHub** — [`codecloud-dev/mox-site`](https://mox-site.pages.dev/go?r=mox-site) 是唯一主源：Issue、Pull Request、功能讨论请统一提交到 GitHub。[Gitee 镜像](https://gitee.com/thousand-code-crafts/mox-site) 仅供国内高速只读访问，每小时从 GitHub 自动同步。
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-8a7bff" alt="version">
@@ -16,7 +16,7 @@
 
 <p align="center"><img src="assets/demo.svg" width="760" alt="mox-site 官机动图：agent-core / moxwebgpu / moxsh 三张卡片错峰亮起，汇入官方门户"></p>
 
-<p align="center"><b>⭐ 如果你喜欢 MoX 工具系列,欢迎点个 <a href="https://mox-site.pages.dev/go.html?r=mox-site">Star</a> —— 它能让更多人发现这些工具!</b></p>
+<p align="center"><b>⭐ 如果你喜欢 MoX 工具系列,欢迎点个 <a href="https://mox-site.pages.dev/go?r=mox-site">Star</a> —— 它能让更多人发现这些工具!</b></p>
 
 
 
@@ -25,8 +25,8 @@
 > 这是个刚起步的项目，**bug 肯定有，而且不少**。我不装完美——
 > 你踩到的每一个坑、每一个槽点，都是帮我把它养好的机会。
 
-- 💥 遇到崩溃 / 黑屏 / 跑不起来？→ [提个 Bug 报告](https://mox-site.pages.dev/go.html?r=mox-site&p=issues)
-- 💡 有想要的功能？→ [开个需求](https://mox-site.pages.dev/go.html?r=mox-site&p=issues)
+- 💥 遇到崩溃 / 黑屏 / 跑不起来？→ [提个 Bug 报告](https://mox-site.pages.dev/go?r=mox-site&p=issues)
+- 💡 有想要的功能？→ [开个需求](https://mox-site.pages.dev/go?r=mox-site&p=issues)
 - 🗯️ 单纯想吐槽、挑刺？→ 也欢迎开 issue，标签随便打 😄
 
 每个 issue 我都会看，能修的尽快修。一起把它从“能跑”养到“好用” 💪
