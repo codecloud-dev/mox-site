@@ -20,6 +20,8 @@
   Cache-Control: public, max-age=600, stale-while-revalidate=300
 /app.js
   Cache-Control: public, max-age=600, stale-while-revalidate=300
+/go.js
+  Cache-Control: public, max-age=600, stale-while-revalidate=300
 /fan-assets/*
   Cache-Control: public, max-age=600, stale-while-revalidate=300
 

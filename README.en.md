@@ -1,4 +1,4 @@
-> **🌐 Canonical repository is on GitHub** — [`codecloud-dev/mox-site`](https://github.com/codecloud-dev/mox-site) is the single source of truth: please file all issues and pull requests there. The [Gitee mirror](https://gitee.com/thousand-code-crafts/mox-site) is a read-only copy synced hourly for faster access in mainland China.
+> **🌐 Canonical repository is on GitHub** — [`codecloud-dev/mox-site`](https://mox-site.pages.dev/go.html?r=mox-site) is the single source of truth: please file all issues and pull requests there. The [Gitee mirror](https://gitee.com/thousand-code-crafts/mox-site) is a read-only copy synced hourly for faster access in mainland China.
 
 <p align="center"><img src="assets/logo.svg" width="128" alt="MoX"/></p>
 
@@ -22,7 +22,7 @@ The official portal for the **MoX series** (Chinese + English).
 
 <p align="center"><img src="assets/demo.svg" width="760" alt="mox-site animation: agent-core / moxwebgpu / moxsh cards lighting up in sequence, feeding into the official portal"></p>
 
-<p><b>⭐ If you like the MoX series, please give us a <a href="https://github.com/codecloud-dev/mox-site">star</a> — it helps more people discover these tools!</b></p>
+<p><b>⭐ If you like the MoX series, please give us a <a href="https://mox-site.pages.dev/go.html?r=mox-site">star</a> — it helps more people discover these tools!</b></p>
 
 
 
@@ -31,8 +31,8 @@ The official portal for the **MoX series** (Chinese + English).
 > This is an early-stage project — **bugs exist, and probably plenty of them.** I'm not pretending it's perfect.
 > Every pitfall you hit and every gripe you have is a chance to help make it better.
 
-- 💥 Crashed / black screen / won't run? → [File a bug report](https://github.com/codecloud-dev/mox-site/issues)
-- 💡 Want a feature? → [Open a feature request](https://github.com/codecloud-dev/mox-site/issues)
+- 💥 Crashed / black screen / won't run? → [File a bug report](https://mox-site.pages.dev/go.html?r=mox-site&p=issues)
+- 💡 Want a feature? → [Open a feature request](https://mox-site.pages.dev/go.html?r=mox-site&p=issues)
 - 🗯️ Just want to rant or nitpick? → Issues are welcome too, label it whatever 😄
 
 I read every issue and fix what I can, fast. Let's grow this from "runs" to "delightful" 💪

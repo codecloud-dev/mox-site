@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>选择线路 · MoX</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="index.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<style>
+  html,body{height:100%}
+  body{margin:0;display:flex;align-items:center;justify-content:center;padding:24px;
+       background:radial-gradient(1200px 800px at 50% -10%,rgba(129,140,248,.14),transparent 60%),var(--bg)}
+  .go-card{width:100%;max-width:520px;padding:36px 32px 28px;border-radius:var(--radius);
+           background:var(--glass);border:1px solid var(--stroke);
+           box-shadow:0 24px 80px rgba(0,0,0,.45);backdrop-filter:blur(18px) saturate(140%);
+           -webkit-backdrop-filter:blur(18px) saturate(140%);text-align:center}
+  .go-logo{width:52px;height:52px;margin:0 auto 18px;display:block}
+  .go-card h1{font-size:24px;font-weight:700;letter-spacing:-.01em;margin:0 0 6px}
+  .go-sub{color:var(--dim);font-size:14px;line-height:1.7;margin:0 0 4px}
+  .go-target{display:inline-block;margin:10px 0 2px;padding:6px 14px;border-radius:999px;
+             border:1px solid var(--stroke-hi);background:rgba(255,255,255,.05);
+             font-size:13px;color:var(--text);word-break:break-all}
+  .go-region{min-height:22px;margin:8px 0 20px;font-size:12.5px;color:var(--faint)}
+  .go-region b{color:var(--accent-a);font-weight:600}
+  .go-btns{display:grid;gap:12px}
+  .go-btn{display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;
+          border-radius:16px;border:1px solid var(--stroke-hi);background:rgba(255,255,255,.04);
+          text-decoration:none;transition:transform .18s ease,border-color .18s ease,background .18s ease}
+  .go-btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.07)}
+  .go-btn .ic{flex:none;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+              justify-content:center;font-size:19px;background:rgba(255,255,255,.06)}
+  .go-btn .t{flex:1;min-width:0}
+  .go-btn .t b{display:block;font-size:15px;font-weight:650;color:var(--text)}
+  .go-btn .t span{display:block;font-size:12px;color:var(--dim);margin-top:2px}
+  .go-btn .rec{flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;color:#06070d;
+               background:var(--accent-a);border-radius:999px;padding:3px 9px}
+  .go-gitee{border-color:rgba(199,42,40,.45)}
+  .go-gitee .ic{background:rgba(199,42,40,.16);color:#ff6b66}
+  .go-github .ic{background:rgba(255,255,255,.08)}
+  .go-remember{display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 0 4px;
+               font-size:12.5px;color:var(--dim);cursor:pointer;user-select:none}
+  .go-note{font-size:12px;color:var(--faint);line-height:1.7;margin:10px 0 0}
+  .go-countdown{margin-top:14px;font-size:13px;color:var(--dim)}
+  .go-countdown button{background:none;border:none;color:var(--accent-b);cursor:pointer;
+                       font-size:13px;text-decoration:underline;padding:0 0 0 6px}
+  .go-home{display:inline-block;margin-top:16px;font-size:12px;color:var(--faint);text-decoration:none}
+  .go-home:hover{color:var(--dim)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="go-card">
+  <img class="go-logo" src="assets/logo.svg" alt="MoX">
+  <h1>你要去哪里？</h1>
+  <p class="go-sub">下面这个链接有两个入口，国内走 Gitee 更快，国外走 GitHub 更全。<br>This link has two homes — pick one.</p>
+  <div class="go-target" id="goTarget">…</div>
+  <div class="go-region" id="goRegion"></div>
+  <div class="go-btns">
+    <a class="go-btn go-gitee" id="btnGitee" href="#">
+      <span class="ic">🚀</span>
+      <span class="t"><b>去 Gitee（国内镜像）</b><span>每小时自动同步 · 国内高速直达</span></span>
+      <span class="rec" id="recGitee" hidden>推荐</span>
+    </a>
+    <a class="go-btn go-github" id="btnGithub" href="#">
+      <span class="ic">🐙</span>
+      <span class="t"><b>去 GitHub（原站）</b><span>Issue / PR / 讨论请在原站提交</span></span>
+      <span class="rec" id="recGithub" hidden>推荐</span>
+    </a>
+  </div>
+  <label class="go-remember"><input type="checkbox" id="goRemember"> 记住我的选择，下次自动前往</label>
+  <p class="go-note">Gitee 为只读镜像（GitHub → Gitee 单向同步）；提 Issue / PR 最终都会汇回 GitHub 主仓库处理。</p>
+  <div class="go-countdown" id="goCountdown" hidden></div>
+  <noscript><p class="go-note">浏览器禁用了 JavaScript：请手动访问 <b>github.com/codecloud-dev</b> 或 <b>gitee.com/thousand-code-crafts</b> 下的对应仓库。</p></noscript>
+  <a class="go-home" href="/">← 返回 MoX 官网</a>
+</main>
+<script src="/region.js"></script>
+<script src="/go.js"></script>
+</body>
+</html>
