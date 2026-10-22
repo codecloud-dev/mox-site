@@ -144,11 +144,15 @@ jobs:
           done
           [ "$LEAK" = 0 ] && echo "OK: 公开产物无后台/QQ 泄露" || S=1
           # 国内外分流回归（防串国，用户核心诉求）：?region=cn 必须把 GitHub 链接改写为 Gitee 镜像 + 注入 region 标记
+          # 两个防误判设计：
+          # 1) cb 缓存穿透参数——边缘缓存 key 不含国家头，旧缓存 index.html 会被某一国家用户命中，
+          #    随机 query 强制 Miss 直达中间件（_headers 已对 HTML 下发 no-store，这是双保险）
+          # 2) 重试窗口拉到 ~5 分钟——首次部署时 Pages 全球边缘传播 + 旧缓存 TTL 残留，90s 不够
           RG=0; CN=""
-          for i in 1 2 3 4 5 6 8 10 12; do
-            CN=$(curl -sS -m 20 "$BASE/?region=cn" 2>/dev/null || true)
+          for i in $(seq 1 20); do
+            CN=$(curl -sS -m 20 "$BASE/?region=cn&cb=$RANDOM$RANDOM$i" 2>/dev/null || true)
             if echo "$CN" | grep -q 'gitee.com/thousand-code-crafts/' && echo "$CN" | grep -q '/region.js'; then break; fi
-            echo "等待分流中间件生效… 第 $i 次"; sleep 8
+            echo "等待分流中间件生效… 第 $i 次（cb 穿透）"; sleep 15
           done
           if echo "$CN" | grep -q 'gitee.com/thousand-code-crafts/' && echo "$CN" | grep -q '/region.js'; then
             echo "OK: 国内版分流生效（GitHub 链接已改写为 Gitee 镜像 + region 标记注入）"
@@ -156,7 +160,12 @@ jobs:
             echo "FAIL: 国内分流未生效（GitHub 链接未改写或缺 region 标记）"; RG=1
           fi
           # region.js 动态标记文件：国内应返回 __mox_region="cn"（CSP script-src 'self' 合规通道）
-          RJ=$(curl -sS -m 20 "$BASE/region.js?region=cn" 2>/dev/null || true)
+          RJ=""
+          for i in $(seq 1 12); do
+            RJ=$(curl -sS -m 20 "$BASE/region.js?region=cn&cb=$RANDOM$RANDOM$i" 2>/dev/null || true)
+            echo "$RJ" | grep -q '__mox_region="cn"' && break
+            echo "等待 region.js 生效… 第 $i 次"; sleep 10
+          done
           if echo "$RJ" | grep -q '__mox_region="cn"'; then
             echo "OK: region.js 动态标记正常（cn）"
           else

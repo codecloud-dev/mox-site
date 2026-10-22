@@ -7,6 +7,13 @@
   Cross-Origin-Opener-Policy: same-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
+# HTML 永不进边缘缓存：国内外分流中间件（_middleware.js）必须对每个请求生效，
+# 否则边缘缓存会把某一国家版的页面发给另一国家用户（串国），也会让中间件改动不生效。
+/*.html
+  Cache-Control: no-store
+/
+  Cache-Control: no-store
+
 # WebGPU SDK 资源：允许任意前端跨域引用（<script src> 或 ES module import），
 # 支撑「任何有自己官网/前端的项目都能直接调 GPU」的设想
 /webgpu/*
