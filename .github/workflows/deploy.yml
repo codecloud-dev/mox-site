@@ -143,6 +143,26 @@ jobs:
             fi
           done
           [ "$LEAK" = 0 ] && echo "OK: 公开产物无后台/QQ 泄露" || S=1
+          # 国内外分流回归（防串国，用户核心诉求）：?region=cn 必须把 GitHub 链接改写为 Gitee 镜像 + 注入 region 标记
+          RG=0; CN=""
+          for i in 1 2 3 4 5 6 8 10 12; do
+            CN=$(curl -sS -m 20 "$BASE/?region=cn" 2>/dev/null || true)
+            if echo "$CN" | grep -q 'gitee.com/thousand-code-crafts/' && echo "$CN" | grep -q '/region.js'; then break; fi
+            echo "等待分流中间件生效… 第 $i 次"; sleep 8
+          done
+          if echo "$CN" | grep -q 'gitee.com/thousand-code-crafts/' && echo "$CN" | grep -q '/region.js'; then
+            echo "OK: 国内版分流生效（GitHub 链接已改写为 Gitee 镜像 + region 标记注入）"
+          else
+            echo "FAIL: 国内分流未生效（GitHub 链接未改写或缺 region 标记）"; RG=1
+          fi
+          # region.js 动态标记文件：国内应返回 __mox_region="cn"（CSP script-src 'self' 合规通道）
+          RJ=$(curl -sS -m 20 "$BASE/region.js?region=cn" 2>/dev/null || true)
+          if echo "$RJ" | grep -q '__mox_region="cn"'; then
+            echo "OK: region.js 动态标记正常（cn）"
+          else
+            echo "FAIL: region.js 未返回 cn 标记（实际：${RJ:0:60}）"; RG=1
+          fi
+          [ "$RG" = 0 ] || S=1
           [ "$S" = 0 ] && echo "✅ 官网安全验证全绿" || {
             gh issue create --title "官网安全验证失败 $(date -u +%FT%TZ)" \
               --body "安全头/CSP/资源完整性检查未通过，见 Actions 日志。" 2>&1 | head -2 || true; exit 1; }
