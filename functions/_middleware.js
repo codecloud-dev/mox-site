@@ -8,6 +8,9 @@
 //
 // ⚠️ CSP 是 script-src 'self'（禁 inline），故 region 标记走同源动态文件 /region.js，
 // 页面只插 <script src="/region.js">——既满足 CSP 又拿到动态值。
+// ⚠️ HTMLRewriter 注入必须用 element 处理器 + append：实测 endTag 处理器里的 append
+// 会被静默丢弃（wrangler@3 本地 + Pages 线上均复现：链接改写了但脚本标记没了），
+// element 里的 append 语义即「end tag 前插入」，同样落在 </body> 前且可靠生效。
 // ⚠️ 改写后的 HTML 一律 no-store：CF 边缘缓存 key 不含国家头，
 // 若让改写结果进缓存会把国内版页面发给国外用户（串国）。
 
@@ -71,7 +74,7 @@ export async function onRequest(context) {
     // 国外：不碰链接，仅注入 region 标记
     return new HTMLRewriter()
       .on('body', {
-        endTag(el) {
+        element(el) {
           el.append(regionScriptTag(), { html: true });
         },
       })
@@ -88,7 +91,7 @@ export async function onRequest(context) {
       },
     })
     .on('body', {
-      endTag(el) {
+      element(el) {
         el.append(regionScriptTag(), { html: true });
       },
     })
