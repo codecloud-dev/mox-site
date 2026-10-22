@@ -62,8 +62,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fy = f32(i / u32(p.res.x)) / p.res.y;
   let q1 = (vec2<f32>(fx, fy) - p.c1) / p.rad;
   let q2 = (vec2<f32>(fx, fy) - p.c2) / p.rad;
-  let a1 = p.peak.x * exp(-dot(q1, q1) * 0.5);
-  let a2 = p.peak.y * exp(-dot(q2, q2) * 0.5);
+  // 线性截止复刻 CSS radial-gradient(..., transparent 448px)：半径外恒 0，
+  // 杜绝 exp 无限衰减导致的「全屏蒙淡蓝」（角落 alpha 必须为 0）
+  let a1 = p.peak.x * max(0.0, 1.0 - length(q1));
+  let a2 = p.peak.y * max(0.0, 1.0 - length(q2));
   let col = (vec3<f32>(0.506, 0.549, 0.973) * a1 + vec3<f32>(0.369, 0.918, 0.831) * a2)
             / max(a1 + a2, 1e-4);
   out[i * 4u + 0u] = col.x;
@@ -98,10 +100,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   function radNow() {
-    /* 448px/416px 绝对半径（28rem/26rem）换算成视口比例，竖屏自动压扁；
-       ×1.25 补偿 exp 衰减与 radial 线性过渡的观感差 */
+    /* 448px 绝对半径（28rem）换算成视口比例，竖屏自动压扁；
+       线性截止后无需补偿，与 CSS radial-gradient 的 transparent 448px 精确一致 */
     var iw = window.innerWidth, ih = window.innerHeight;
-    return [560 / iw, 560 / ih];
+    return [448 / iw, 448 / ih];
   }
 
   function writeUniform(t) {
