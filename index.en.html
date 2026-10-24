@@ -455,6 +455,11 @@
     <div id="loginBox">
       <a class="gh" id="ghLoginBtn" href="#">Sign in with GitHub</a>
       <a class="gh gitee" id="giteeLoginBtn" href="#">Sign in with Gitee (faster in China)</a>
+      <div id="localCredWrap" style="display:none">
+        <div class="or">or</div>
+        <button id="localCredBtn" class="primary wide">Use local credential</button>
+        <div class="local-cred-hint">A local sign-in credential was found — no GitHub / Gitee authorization needed</div>
+      </div>
       <div class="or">or</div>
       <input id="tokInput" type="password" placeholder="Paste a GitHub Token (ghp_ / github_pat_)" autocomplete="off" />
       <div class="row">
@@ -467,6 +472,7 @@
       <div class="row">
         <a id="meFanBtn" class="gh" style="display:none" href="fan.html" rel="opener">Fan zone</a>
         <a id="meRedeemBtn" class="gh" style="display:none" href="redeem.html" rel="opener">Redeem</a>
+        <a id="meBtn" class="gh" style="display:none" href="me.en.html" rel="opener">Account</a>
         <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">Exclusive entry</a>
         <button id="meLogoutBtn" class="primary">Sign out</button>
         <button id="meCloseBtn">Close</button>

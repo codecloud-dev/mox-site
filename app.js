@@ -256,6 +256,11 @@ function makeSlider(root,onPass){
     var b=document.getElementById('meRedeemBtn');
     if(b&&getTok()) b.style.display='';
   }
+  /* 个人中心入口：登录即显示 */
+  function renderMeEntry(){
+    var b=document.getElementById('meBtn');
+    if(b&&getTok()) b.style.display='';
+  }
 
   /* ===== 账号绑定：一个 MoX 账号绑多个 OAuth 身份（GitHub / Gitee 任选） =====
      绑定走 /auth/<provider>/start?bind=1：OAuth 回调时带 mox_sid Cookie 定位当前
@@ -349,20 +354,49 @@ function makeSlider(root,onPass){
     slot.innerHTML='<a href="#" id="loginBtn">登录</a>';
     var b=document.getElementById('loginBtn');
     if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
+    /* 本机凭证入口：有 token 才展示（软退出后仍保留） */
+    var lcw=document.getElementById('localCredWrap');
+    if(lcw)lcw.style.display=getTok()?'':'none';
   }
 
-  /* 退出：POST /auth/logout 撤销 mox_sid 服务端会话（30 天 Cookie），再清本地 token。
-     无刷新：renderLogin 直接切回未登录态，toast 即时反馈 */
+  /* 退出（软退出）：保留本机 mox_token（30 天会话凭证），仅切回登录页 UI 并打标记。
+     下次打开官网时登录页会出现「使用本机凭证直接登录」，Bearer 校验即时恢复，
+     无需再走 GitHub / Gitee OAuth（国内访问 GitHub 不稳定，省一步）。
+     服务端会话【不吊销】，所以本机凭证始终有效——这正是用户要的「免 GitHub」体验。 */
   function doLogout(){
-    var t=getTok();
-    try{
-      fetch(LOGIN_API+'/auth/logout',{method:'POST',credentials:'include',
-        headers:t?{'Authorization':'Bearer '+t}:{}}).catch(function(){});
-    }catch(e){}
-    delTok();
+    try{ localStorage.setItem('mox_logged_out','1'); }catch(e){}
     mask.classList.remove('show');
     renderLogin();
-    showToast('已退出登录');
+    showToast('已退出 · 本机凭证已保留，下次免 GitHub 直接登录');
+  }
+
+  /* 使用本机凭证直接登录：拿本地 mox_token 走 Bearer /me 即时校验，不碰 GitHub / Gitee。 */
+  function loginWithLocalToken(){
+    var t=getTok(); if(!t){ renderLogin(); return; }
+    try{ localStorage.removeItem('mox_logged_out'); }catch(e){}
+    var btn=document.getElementById('localCredBtn');
+    if(btn){btn.classList.add('busy');btn.disabled=true;btn.textContent='正在验证本机凭证…';}
+    fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t},cache:'no-store'})
+      .then(function(r){
+        if(!r.ok)throw new Error('dead');
+        return r.json();
+      })
+      .then(function(d){
+        if(!d||!d.user)throw new Error('dead');
+        renderUser(d.user);
+        if(d.admin_path)renderAdmin(d.admin_path);
+        renderFanEntry();renderRedeemEntry();
+        mask.classList.remove('show');
+        showToast('已用本机凭证登录 · '+((d.user.name||d.user.login)||'欢迎'));
+      })
+      .catch(function(){
+        /* 凭证失效（如 30 天到期 / 服务端清库）：清掉回退 OAuth 登录 */
+        delTok();
+        try{ localStorage.removeItem('mox_logged_out'); }catch(e){}
+        if(btn){btn.classList.remove('busy');btn.disabled=false;btn.textContent='使用本机凭证直接登录';}
+        renderLogin();
+        showToast('本机凭证已失效，请重新登录');
+      });
   }
 
   function openLogin(){
@@ -385,6 +419,8 @@ function makeSlider(root,onPass){
     }
     if(lb)lb.style.display='';
     if(ib)ib.style.display='none';
+    var lcw=document.getElementById('localCredWrap');
+    if(lcw)lcw.style.display=getTok()?'':'none';
     var gh=document.getElementById('ghLoginBtn');
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
     /* Gitee 快捷登录（平行入口，国内更快）：href 与 GitHub 同构；后端未配置时静默隐藏按钮 */
@@ -401,6 +437,8 @@ function makeSlider(root,onPass){
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
 
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
+  var localCredBtn=document.getElementById('localCredBtn');
+  if(localCredBtn)localCredBtn.addEventListener('click',function(e){e.preventDefault();loginWithLocalToken();});
   var meCloseBtn=document.getElementById('meCloseBtn');
   if(meCloseBtn)meCloseBtn.addEventListener('click',function(){mask.classList.remove('show');});
   var meLogoutBtn=document.getElementById('meLogoutBtn');
@@ -430,6 +468,7 @@ function makeSlider(root,onPass){
         renderUser(x.d.user);
         renderFanEntry();
         renderRedeemEntry();
+        renderMeEntry();
         showToast('登录成功 · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'欢迎'));
         fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+(x.d.sid || t)}})
           .then(function(r){return r.ok?r.json():null;})
@@ -443,6 +482,8 @@ function makeSlider(root,onPass){
     probeBackend();
     var t=getTok();
     if(!t){renderLogin();return;}
+    /* 显式软退出过：不自动恢复，展示「本机凭证直接登录」入口（免 GitHub） */
+    if(localStorage.getItem('mox_logged_out')==='1'){ renderLogin(); return; }
     fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
       .then(function(r){
         var ct=(r.headers.get('content-type')||'');
@@ -456,6 +497,7 @@ function makeSlider(root,onPass){
           if(x.d.admin_path)renderAdmin(x.d.admin_path);
           renderFanEntry();
           renderRedeemEntry();
+          renderMeEntry();
         }else if(x.down){
           renderLogin();setStatus('off','登录服务暂时不可达');
         }else{

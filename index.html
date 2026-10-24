@@ -474,6 +474,11 @@
     <div id="loginBox">
       <a class="gh" id="ghLoginBtn" href="#">使用 GitHub 登录</a>
       <a class="gh gitee" id="giteeLoginBtn" href="#">使用 Gitee 登录（国内更快）</a>
+      <div id="localCredWrap" style="display:none">
+        <div class="or">或</div>
+        <button id="localCredBtn" class="primary wide">使用本机凭证直接登录</button>
+        <div class="local-cred-hint">检测到本机登录凭证，无需再走 GitHub / Gitee 授权</div>
+      </div>
       <div class="or">或</div>
       <input id="tokInput" type="password" placeholder="粘贴 GitHub Token（ghp_ / github_pat_）" autocomplete="off" />
       <div class="row">
@@ -486,6 +491,7 @@
       <div class="row">
         <a id="meFanBtn" class="gh" style="display:none" href="fan.html" rel="opener">粉丝专区</a>
         <a id="meRedeemBtn" class="gh" style="display:none" href="redeem.html" rel="opener">商品兑换</a>
+        <a id="meBtn" class="gh" style="display:none" href="me.html" rel="opener">个人中心</a>
         <a id="meAdminBtn" class="gh" style="display:none" href="#" rel="noopener">专属入口</a>
         <button id="meLogoutBtn" class="primary">退出登录</button>
         <button id="meCloseBtn">关闭</button>

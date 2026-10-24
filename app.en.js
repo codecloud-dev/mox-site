@@ -223,6 +223,11 @@ function makeSlider(root,onPass){
     var b=document.getElementById('meRedeemBtn');
     if(b&&getTok()) b.style.display='';
   }
+  /* Account center entry: shown once signed in */
+  function renderMeEntry(){
+    var b=document.getElementById('meBtn');
+    if(b&&getTok()) b.style.display='';
+  }
 
   /* ===== Account binding: one MoX account, multiple OAuth identities (GitHub / Gitee) =====
      Binding goes through /auth/<provider>/start?bind=1: the OAuth callback carries the
@@ -317,20 +322,47 @@ function makeSlider(root,onPass){
     slot.innerHTML='<a href="#" id="loginBtn">Sign in</a>';
     var b=document.getElementById('loginBtn');
     if(b)b.addEventListener('click',function(e){e.preventDefault();openLogin();});
+    var lcw=document.getElementById('localCredWrap');
+    if(lcw)lcw.style.display=getTok()?'':'none';
   }
 
-  /* Sign out must also revoke the server session (30-day mox_sid cookie), then drop the
-     local token — reload-free: renderLogin switches back instantly with a toast */
+  /* Sign out (soft): keep the local mox_token (30-day session credential), just switch the
+     UI back to the sign-in page and set a flag. Next visit shows a "Use local credential"
+     button that re-validates via Bearer /me instantly — no GitHub / Gitee OAuth needed
+     (GitHub is flaky in China). The server session is NOT revoked, so the credential stays valid. */
   function doLogout(){
-    var t=getTok();
-    try{
-      fetch(LOGIN_API+'/auth/logout',{method:'POST',credentials:'include',
-        headers:t?{'Authorization':'Bearer '+t}:{}}).catch(function(){});
-    }catch(e){}
-    delTok();
+    try{ localStorage.setItem('mox_logged_out','1'); }catch(e){}
     mask.classList.remove('show');
     renderLogin();
-    showToast('Signed out');
+    showToast('Signed out · local credential kept — next time, no GitHub needed');
+  }
+
+  /* Sign in with the local credential: validate the stored mox_token via Bearer /me, no OAuth. */
+  function loginWithLocalToken(){
+    var t=getTok(); if(!t){ renderLogin(); return; }
+    try{ localStorage.removeItem('mox_logged_out'); }catch(e){}
+    var btn=document.getElementById('localCredBtn');
+    if(btn){btn.classList.add('busy');btn.disabled=true;btn.textContent='Verifying local credential…';}
+    fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t},cache:'no-store'})
+      .then(function(r){
+        if(!r.ok)throw new Error('dead');
+        return r.json();
+      })
+      .then(function(d){
+        if(!d||!d.user)throw new Error('dead');
+        renderUser(d.user);
+        if(d.admin_path)renderAdmin(d.admin_path);
+        renderFanEntry();renderRedeemEntry();renderMeEntry();
+        mask.classList.remove('show');
+        showToast('Signed in with local credential · '+((d.user.name||d.user.login)||'welcome'));
+      })
+      .catch(function(){
+        delTok();
+        try{ localStorage.removeItem('mox_logged_out'); }catch(e){}
+        if(btn){btn.classList.remove('busy');btn.disabled=false;btn.textContent='Use local credential';}
+        renderLogin();
+        showToast('Local credential expired — please sign in again');
+      });
   }
 
   function openLogin(){
@@ -353,6 +385,8 @@ function makeSlider(root,onPass){
     }
     if(lb)lb.style.display='';
     if(ib)ib.style.display='none';
+    var lcw=document.getElementById('localCredWrap');
+    if(lcw)lcw.style.display=getTok()?'':'none';
     var gh=document.getElementById('ghLoginBtn');
     if(gh)gh.href=LOGIN_API+'/auth/github/start?redirect='+encodeURIComponent(location.href);
     /* Gitee quick sign-in (parallel entry, faster in China): same shape as GitHub;
@@ -370,6 +404,8 @@ function makeSlider(root,onPass){
   if(cta)cta.addEventListener('click',function(e){e.preventDefault();openLogin();});
 
   document.getElementById('tokCancelBtn').addEventListener('click',function(){mask.classList.remove('show');});
+  var localCredBtn=document.getElementById('localCredBtn');
+  if(localCredBtn)localCredBtn.addEventListener('click',function(e){e.preventDefault();loginWithLocalToken();});
   var meCloseBtn=document.getElementById('meCloseBtn');
   if(meCloseBtn)meCloseBtn.addEventListener('click',function(){mask.classList.remove('show');});
   var meLogoutBtn=document.getElementById('meLogoutBtn');
@@ -412,6 +448,8 @@ function makeSlider(root,onPass){
     probeBackend();
     var t=getTok();
     if(!t){renderLogin();return;}
+    /* Explicitly soft-signed-out before: don't auto-restore, show the "use local credential" entry */
+    if(localStorage.getItem('mox_logged_out')==='1'){ renderLogin(); return; }
     fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
       .then(function(r){
         var ct=(r.headers.get('content-type')||'');
@@ -425,6 +463,7 @@ function makeSlider(root,onPass){
           if(x.d.admin_path)renderAdmin(x.d.admin_path);
           renderFanEntry();
           renderRedeemEntry();
+          renderMeEntry();
         }else if(x.down){
           renderLogin();setStatus('off','Sign-in service temporarily unreachable');
         }else{

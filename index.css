@@ -205,10 +205,19 @@
   #authSlot{display:flex;align-items:center;gap:10px;margin-left:12px}
   #authSlot img.av{width:28px;height:28px;border-radius:50%;border:1px solid var(--stroke-hi);object-fit:cover}
   #loginBtn{color:var(--text)!important;background:linear-gradient(120deg,#5eead4,#818cf8);-webkit-background-clip:text;background-clip:text;font-weight:700}
-  .modal-mask{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
-    background:rgba(3,4,9,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);padding:20px}
-  .modal-mask.show{display:flex}
-  .modal{width:min(420px,94vw);padding:26px 24px}
+  /* 苹果风进出场：仅动 opacity + transform（GPU 合成，不掉帧）。
+     进场 ≈ .28s ease-out 上浮归位；退场 ≈ .28s ease-in 下沉淡出（说快不快、说慢也不慢）。
+     visibility 延迟到退场动画结束再隐藏，避免淡出中途被裁掉。
+     prefers-reduced-motion 已由全局规则关掉所有过渡，故无障碍用户是瞬时切换。 */
+  .modal-mask{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+    background:rgba(3,4,9,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);padding:20px;
+    opacity:0;visibility:hidden;pointer-events:none;
+    transition:opacity .28s ease, visibility 0s linear .28s}
+  .modal-mask.show{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .28s ease, visibility 0s}
+  .modal{width:min(420px,94vw);padding:26px 24px;
+    transform:scale(.96) translateY(10px);opacity:0;
+    transition:transform .28s cubic-bezier(.22,.8,.26,1), opacity .28s ease}
+  .modal-mask.show .modal{transform:none;opacity:1}
   .modal h3{margin:0 0 4px;font-size:18px}
   .modal p.dim{margin:0 0 16px;color:var(--dim);font-size:13px;line-height:1.5}
   .modal a.gh{display:block;text-align:center;padding:12px;border-radius:12px;background:linear-gradient(120deg,#5eead4,#818cf8);
