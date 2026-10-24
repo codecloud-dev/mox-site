@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moxsh · 设备绑定</title>
+  <meta name="description" content="moxsh 设备绑定 —— 把本机设备令牌绑定到你的账号，用于商品授权兑换" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests" />
+  <link rel="stylesheet" href="bind-assets/styles.css" />
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="logo">moxsh <span data-i18n="brand">设备绑定</span></div>
+      <div class="tagline" data-i18n="tagline">把本机设备绑定到你的账号 · 兑换商品授权的前提</div>
+      <div style="margin-top:8px"><a class="lang" href="#" id="langSwitch">English</a></div>
+    </header>
+
+    <div id="config-warn" class="warn-banner" hidden>
+      尚未配置后端地址：请编辑 <b>bind-assets/config.js</b> 的 <b>apiBase</b>（指向 mox-id Worker 或官网同域反代）。
+    </div>
+
+    <div id="notices"></div>
+
+    <!-- 登录 / 我的信息 -->
+    <div id="auth-area"></div>
+
+    <!-- 设备绑定区（登录后显示） -->
+    <div id="bind-area" hidden>
+      <div class="section-title" data-i18n="deviceTitle">待绑定设备</div>
+      <div class="glass card" id="device-card"></div>
+      <div class="section-title" data-i18n="confirmTitle">确认绑定</div>
+      <div class="glass card">
+        <p class="muted" data-i18n="confirmHint">点击「绑定此设备」后，本机设备令牌即与当前 GitHub 账号关联。之后可在官网兑换页把商品授权赋予这台设备。</p>
+        <div class="row">
+          <button id="btn-bind" class="btn primary" data-i18n="bindBtn">绑定此设备</button>
+          <a class="btn ghost" href="/redeem.html" data-i18n="goRedeem">去兑换页</a>
+        </div>
+        <div id="bind-msg" class="msg"></div>
+      </div>
+    </div>
+
+    <footer>
+      moxsh · Powered by mox-id（Cloudflare）· 登录即表示同意将 GitHub 公开信息用于权益绑定
+    </footer>
+  </div>
+
+  <script src="bind-assets/config.js"></script>
+  <script src="bind-assets/app.js"></script>
+</body>
+</html>

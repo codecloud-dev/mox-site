@@ -251,6 +251,11 @@ function makeSlider(root,onPass){
       .then(function(d){ var b=document.getElementById('meFanBtn'); if(b&&d&&d.claimed) b.style.display=''; })
       .catch(function(){});
   }
+  /* 商品兑换入口：登录即显示（买家可能有任意商品；空态由 redeem.html 自己处理） */
+  function renderRedeemEntry(){
+    var b=document.getElementById('meRedeemBtn');
+    if(b&&getTok()) b.style.display='';
+  }
 
   /* ===== 账号绑定：一个 MoX 账号绑多个 OAuth 身份（GitHub / Gitee 任选） =====
      绑定走 /auth/<provider>/start?bind=1：OAuth 回调时带 mox_sid Cookie 定位当前
@@ -424,6 +429,7 @@ function makeSlider(root,onPass){
         setTok(x.d.sid || t);mask.classList.remove('show');
         renderUser(x.d.user);
         renderFanEntry();
+        renderRedeemEntry();
         showToast('登录成功 · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'欢迎'));
         fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+(x.d.sid || t)}})
           .then(function(r){return r.ok?r.json():null;})
@@ -449,6 +455,7 @@ function makeSlider(root,onPass){
           renderUser(x.d.user);
           if(x.d.admin_path)renderAdmin(x.d.admin_path);
           renderFanEntry();
+          renderRedeemEntry();
         }else if(x.down){
           renderLogin();setStatus('off','登录服务暂时不可达');
         }else{

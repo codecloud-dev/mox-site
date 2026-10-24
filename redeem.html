@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>moxsh · 商品兑换</title>
+  <meta name="description" content="moxsh 商品兑换 —— 用兑换码或爱发电订单号兑换商品授权，并赋予到你的设备" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://avatars.githubusercontent.com data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests" />
+  <link rel="stylesheet" href="redeem-assets/styles.css" />
+</head>
+<body>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+
+  <div class="wrap">
+    <header class="hero">
+      <div class="logo">moxsh <span data-i18n="brand">商品兑换</span></div>
+      <div class="tagline" data-i18n="tagline">兑换码 / 爱发电订单号 → 赋予到你的设备</div>
+      <div style="margin-top:8px"><a class="lang" href="#" id="langSwitch">English</a></div>
+    </header>
+
+    <div id="config-warn" class="warn-banner" hidden>
+      尚未配置后端地址：请编辑 <b>redeem-assets/config.js</b> 的 <b>apiBase</b>（指向 mox-id Worker 或官网同域反代）。
+    </div>
+
+    <div id="notices"></div>
+
+    <!-- 登录 / 我的信息 -->
+    <div id="auth-area"></div>
+
+    <!-- 兑换区（登录后显示） -->
+    <div id="redeem-area" hidden>
+      <div class="section-title" data-i18n="step1">① 选择设备</div>
+      <div class="glass card" id="device-pick"></div>
+
+      <div class="section-title" data-i18n="step2">② 输入兑换码或订单号</div>
+      <div class="glass card">
+        <div class="formline">
+          <div>
+            <label class="form-label" for="rdCode" data-i18n="codeLabel">兑换码（爱发电自动回复里领取）</label>
+            <input id="rdCode" class="form-control" placeholder="MX###-####-####-####" autocomplete="off" />
+          </div>
+          <div>
+            <label class="form-label" for="rdOrder" data-i18n="orderLabel">或爱发电订单号（二选一）</label>
+            <input id="rdOrder" class="form-control" placeholder="2024xxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="btn-redeem" class="btn primary" data-i18n="redeemBtn">立即兑换</button>
+        </div>
+        <div id="redeem-msg" class="msg"></div>
+        <p class="muted" style="font-size:12px;margin-top:10px" data-i18n="redeemHint">
+          兑换成功后授权即时生效：在选了的那台设备上执行 mox redeem status 即可看到。每个账号对每个商品只保留一条授权；换设备每月可操作 1 次。
+        </p>
+      </div>
+
+      <div class="section-title" data-i18n="myEnt">我的授权</div>
+      <div class="glass card" id="my-ents"></div>
+
+      <div class="section-title" data-i18n="catalog">商品目录</div>
+      <div id="catalog"></div>
+    </div>
+
+    <footer>
+      moxsh · Powered by mox-id（Cloudflare）· 登录即表示同意将 GitHub 公开信息用于权益绑定
+    </footer>
+  </div>
+
+  <script src="redeem-assets/config.js"></script>
+  <script src="redeem-assets/app.js"></script>
+</body>
+</html>

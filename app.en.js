@@ -217,6 +217,12 @@ function makeSlider(root,onPass){
       .then(function(d){ var b=document.getElementById('meFanBtn'); if(b&&d&&d.claimed) b.style.display=''; })
       .catch(function(){});
   }
+  /* Redeem entry: shown whenever signed in (buyers may hold any product;
+     empty states are handled by redeem.html itself). */
+  function renderRedeemEntry(){
+    var b=document.getElementById('meRedeemBtn');
+    if(b&&getTok()) b.style.display='';
+  }
 
   /* ===== Account binding: one MoX account, multiple OAuth identities (GitHub / Gitee) =====
      Binding goes through /auth/<provider>/start?bind=1: the OAuth callback carries the
@@ -392,6 +398,7 @@ function makeSlider(root,onPass){
         setTok(t);mask.classList.remove('show');
         renderUser(x.d.user);
         renderFanEntry();
+        renderRedeemEntry();
         showToast('Signed in · '+((x.d.user&&(x.d.user.name||x.d.user.login))||'welcome'));
         fetch(LOGIN_API+'/me',{headers:{'Authorization':'Bearer '+t}})
           .then(function(r){return r.ok?r.json():null;})
@@ -417,6 +424,7 @@ function makeSlider(root,onPass){
           renderUser(x.d.user);
           if(x.d.admin_path)renderAdmin(x.d.admin_path);
           renderFanEntry();
+          renderRedeemEntry();
         }else if(x.down){
           renderLogin();setStatus('off','Sign-in service temporarily unreachable');
         }else{
